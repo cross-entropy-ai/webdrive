@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Button } from "../components/button";
 import { type DataTableColumn, DataTable } from "../components/data-table";
 import { Input } from "../components/input";
+import { Modal } from "../components/modal";
 import { PageShell } from "../components/pageshell";
 
 type Entry = {
@@ -182,33 +183,63 @@ export function Dashboard() {
 	const Breadcrumbs = () => {
 		const parts = path.split("/").filter(Boolean);
 		let acc = "";
-		const segments = parts.map((p) => {
-			acc += `/${p}`;
-			return { name: p, path: acc };
-		});
+		const segments = [
+			{ name: "/", path: "/" },
+			...parts.map((p) => {
+				acc += `/${p}`;
+				return { name: p, path: acc };
+			}),
+		];
+
+		// Build display label: truncate middle if deep
+		const label = path === "/" ? "/" : `/ ${parts.join(" / ")}`;
 
 		return (
-			<div className="flex items-center gap-2 text-sm">
-				<span
-					onClick={() => navigate("/")}
-					className="text-muted cursor-pointer"
+			<>
+				<button
+					type="button"
+					className="breadcrumb-btn"
+					onClick={() => setPathModalOpen(true)}
 				>
-					/
-				</span>
-				{segments.map((c, i) => (
-					<div key={c.path} className="flex items-center gap-2">
-						{i > 0 && <span className="text-muted">/</span>}
-						<button
-							type="button"
-							onClick={() => navigate(c.path)}
-							className="text-muted cursor-pointer"
-							style={{ background: "transparent", border: "none" }}
-						>
-							{c.name}
-						</button>
-					</div>
-				))}
-			</div>
+					<Icon
+						icon="solar:folder-path-connect-linear"
+						width={14}
+						className="text-muted"
+						style={{ flexShrink: 0 }}
+					/>
+					<span className="breadcrumb-label">{label}</span>
+				</button>
+
+				<Modal open={pathModalOpen} onClose={() => setPathModalOpen(false)}>
+					<Modal.Header>Navigate to</Modal.Header>
+					<Modal.Body>
+						<div className="path-modal-list">
+							{segments.map((s, i) => (
+								<button
+									key={s.path}
+									type="button"
+									className={`path-modal-item${s.path === path ? " active" : ""}`}
+									onClick={() => {
+										navigate(s.path);
+										setPathModalOpen(false);
+									}}
+								>
+									<span
+										className="text-muted"
+										style={{ minWidth: `${i * 1}rem`, display: "inline-block" }}
+									/>
+									<Icon
+										icon={i === 0 ? "solar:home-linear" : "solar:folder-linear"}
+										width={14}
+										className="text-muted"
+									/>
+									<span>{s.name}</span>
+								</button>
+							))}
+						</div>
+					</Modal.Body>
+				</Modal>
+			</>
 		);
 	};
 
