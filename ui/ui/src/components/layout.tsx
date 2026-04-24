@@ -25,7 +25,17 @@ function ThemeToggle() {
 	);
 }
 
-export function Layout({ children }: { children: ReactNode }) {
+export type Tab = "dashboard" | "file-browser";
+
+export function Layout({
+	tab,
+	onTabChange,
+	children,
+}: {
+	tab: Tab;
+	onTabChange: (t: Tab) => void;
+	children: ReactNode;
+}) {
 	const [hostname, setHostname] = useState<string>("");
 	const [root, setRoot] = useState<string>("");
 	const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -47,6 +57,11 @@ export function Layout({ children }: { children: ReactNode }) {
 		window.addEventListener("resize", onResize);
 		return () => window.removeEventListener("resize", onResize);
 	}, []);
+
+	const navItems: { id: Tab; icon: string; label: string }[] = [
+		{ id: "dashboard", icon: "solar:monitor-linear", label: "Dashboard" },
+		{ id: "file-browser", icon: "solar:folder-with-files-linear", label: "File Browser" },
+	];
 
 	return (
 		<div className="layout-container">
@@ -72,10 +87,20 @@ export function Layout({ children }: { children: ReactNode }) {
 				</div>
 				<div className="sidebar-body">
 					<div className="nav-section-label">System</div>
-					<div className="nav-item">
-						<Icon icon="solar:folder-with-files-linear" width={14} />
-						<span>File Browser</span>
-					</div>
+					{navItems.map((item) => (
+						<button
+							key={item.id}
+							type="button"
+							className={`nav-item${tab === item.id ? " active" : ""}`}
+							onClick={() => {
+								onTabChange(item.id);
+								setSidebarOpen(false);
+							}}
+						>
+							<Icon icon={item.icon} width={14} />
+							<span>{item.label}</span>
+						</button>
+					))}
 				</div>
 			</div>
 

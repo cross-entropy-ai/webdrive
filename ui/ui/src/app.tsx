@@ -1,13 +1,18 @@
 import { ThemeProvider } from "next-themes";
-import { Layout } from "./components/layout";
+import { useState } from "react";
+import { Layout, type Tab } from "./components/layout";
 import { Dashboard } from "./pages/dashboard";
+import { FileBrowser } from "./pages/file-browser";
 import "./index.css";
 
 export function App() {
+	const [tab, setTab] = useState<Tab>("dashboard");
+
 	return (
 		<ThemeProvider attribute="class" disableTransitionOnChange>
-			<Layout>
-				<Dashboard />
+			<Layout tab={tab} onTabChange={setTab}>
+				{tab === "dashboard" && <Dashboard />}
+				{tab === "file-browser" && <FileBrowser />}
 			</Layout>
 		</ThemeProvider>
 	);
