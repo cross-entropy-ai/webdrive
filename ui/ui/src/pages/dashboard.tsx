@@ -183,9 +183,9 @@ export function Dashboard() {
 				>
 					/
 				</button>
-				{segments.map((c) => (
+				{segments.map((c, i) => (
 					<div key={c.path} className="flex items-center gap-2">
-						<span className="text-muted">/</span>
+						{i > 0 && <span className="text-muted">/</span>}
 						<button
 							type="button"
 							onClick={() => navigate(c.path)}
