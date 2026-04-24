@@ -38,8 +38,10 @@ export function Layout({ children }: { children: ReactNode }) {
 	const location = useLocation();
 	const navigate = useNavigate();
 
-	const p = location.pathname;
-	const activeTab = p.startsWith("/files") ? "/files" : p.startsWith("/terminal") ? "/terminal" : "/";
+	const activeTab =
+		navItems.find(
+			(item) => item.path !== "/" && location.pathname.startsWith(item.path),
+		)?.path ?? "/";
 
 	useEffect(() => {
 		fetch("/api/info")

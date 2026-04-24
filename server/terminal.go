@@ -53,7 +53,7 @@ func (h *handler) terminalWS(c *gin.Context) {
 	// PTY → WebSocket
 	go func() {
 		defer cleanup()
-		buf := make([]byte, 4096)
+		buf := make([]byte, 32768)
 		for {
 			n, err := ptmx.Read(buf)
 			if err != nil {

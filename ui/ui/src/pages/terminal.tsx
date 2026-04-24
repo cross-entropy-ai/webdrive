@@ -6,31 +6,32 @@ import "@xterm/xterm/css/xterm.css";
 
 export function Terminal() {
 	const containerRef = useRef<HTMLDivElement>(null);
-	const termRef = useRef<XTerm | null>(null);
 
 	useEffect(() => {
-		if (!containerRef.current) return;
+		const el = containerRef.current;
+		if (!el) return;
+
+		const fontFamily = getComputedStyle(document.documentElement)
+			.getPropertyValue("--font-mono")
+			.trim();
 
 		const term = new XTerm({
 			cursorBlink: true,
 			fontSize: 13,
-			fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+			fontFamily,
 			theme: getTheme(),
 			allowProposedApi: true,
 			rightClickSelectsWord: false,
 		});
-		termRef.current = term;
 
 		const fitAddon = new FitAddon();
 		term.loadAddon(fitAddon);
 		term.loadAddon(new WebLinksAddon());
 
-		term.open(containerRef.current);
+		term.open(el);
 
-		// Disable browser context menu on terminal
-		containerRef.current.addEventListener("contextmenu", (e) => {
-			e.preventDefault();
-		});
+		const onContextMenu = (e: Event) => e.preventDefault();
+		el.addEventListener("contextmenu", onContextMenu);
 
 		fitAddon.fit();
 
@@ -41,11 +42,13 @@ export function Terminal() {
 
 		ws.onopen = () => {
 			// Send initial size
-			ws.send(JSON.stringify({
-				type: "resize",
-				cols: term.cols,
-				rows: term.rows,
-			}));
+			ws.send(
+				JSON.stringify({
+					type: "resize",
+					cols: term.cols,
+					rows: term.rows,
+				}),
+			);
 		};
 
 		ws.onmessage = (e) => {
@@ -88,6 +91,7 @@ export function Terminal() {
 		return () => {
 			observer.disconnect();
 			window.removeEventListener("resize", onResize);
+			el.removeEventListener("contextmenu", onContextMenu);
 			ws.close();
 			term.dispose();
 		};

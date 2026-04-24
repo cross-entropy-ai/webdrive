@@ -3,6 +3,7 @@ import hljs from "highlight.js";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../components/button";
+import { formatBytes } from "../lib/format";
 import { type DataTableColumn, DataTable } from "../components/data-table";
 import { Modal } from "../components/modal";
 import { RenameModal } from "../components/rename-modal";
@@ -18,18 +19,6 @@ type ListResponse = {
 	path: string;
 	entries: Entry[];
 };
-
-function formatSize(bytes: number): string {
-	if (bytes < 1024) return `${bytes} B`;
-	const units = ["KB", "MB", "GB", "TB"];
-	let n = bytes / 1024;
-	let i = 0;
-	while (n >= 1024 && i < units.length - 1) {
-		n /= 1024;
-		i += 1;
-	}
-	return `${n.toFixed(1)} ${units[i]}`;
-}
 
 function formatTime(iso: string): string {
 	const d = new Date(iso);
@@ -538,7 +527,7 @@ export function FileBrowser() {
 			sortDir: sortKey === "size" ? sortDir : undefined,
 			render: (row) => (
 				<span className="text-muted">
-					{row._isParent || row.is_dir ? "—" : formatSize(row.size)}
+					{row._isParent || row.is_dir ? "—" : formatBytes(row.size)}
 				</span>
 			),
 		},
