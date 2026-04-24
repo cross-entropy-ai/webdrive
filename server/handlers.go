@@ -179,6 +179,32 @@ func (h *handler) rename(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
+// Extensions that mime.TypeByExtension maps incorrectly (e.g. .ts → video/mp2t)
+// or that have no registered MIME type but are known text/code files.
+var textFileExts = map[string]bool{
+	".ts": true, ".tsx": true, ".jsx": true, ".mjs": true, ".cjs": true,
+	".rs": true, ".go": true, ".py": true, ".rb": true, ".lua": true,
+	".sh": true, ".bash": true, ".zsh": true, ".fish": true,
+	".yaml": true, ".yml": true, ".toml": true, ".ini": true, ".conf": true, ".cfg": true,
+	".md": true, ".mdx": true, ".rst": true, ".txt": true, ".log": true,
+	".sql": true, ".graphql": true, ".gql": true, ".proto": true,
+	".dockerfile": true,
+	".vue": true, ".svelte": true, ".astro": true,
+	".tf": true, ".hcl": true, ".nix": true,
+	".kt": true, ".kts": true, ".swift": true, ".ex": true, ".exs": true,
+	".hs": true, ".ml": true, ".mli": true, ".erl": true, ".hrl": true,
+	".r": true, ".R": true, ".jl": true, ".pl": true, ".pm": true,
+	".cmake": true, ".mk": true,
+}
+
+var textFileNames = map[string]bool{
+	"makefile": true, "dockerfile": true, "justfile": true,
+	"rakefile": true, "gemfile": true, "procfile": true,
+	"vagrantfile": true, "brewfile": true,
+	".gitignore": true, ".dockerignore": true, ".editorconfig": true,
+	".env": true, ".env.local": true, ".env.example": true,
+}
+
 func (h *handler) preview(c *gin.Context) {
 	reqPath := c.Query("path")
 	full, err := h.resolve(reqPath)
@@ -196,7 +222,15 @@ func (h *handler) preview(c *gin.Context) {
 		return
 	}
 
-	ct := mime.TypeByExtension(filepath.Ext(info.Name()))
+	name := info.Name()
+	ext := strings.ToLower(filepath.Ext(name))
+	nameLower := strings.ToLower(name)
+	ct := ""
+	if textFileExts[ext] || textFileNames[nameLower] {
+		ct = "text/plain; charset=utf-8"
+	} else {
+		ct = mime.TypeByExtension(ext)
+	}
 	if ct != "" {
 		c.Header("Content-Type", ct)
 		c.Header("Content-Length", fmt.Sprintf("%d", info.Size()))
