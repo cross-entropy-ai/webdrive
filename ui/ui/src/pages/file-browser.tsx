@@ -795,12 +795,7 @@ export function FileBrowser() {
 		return (
 			<div className="page-shell animate-fadeUp">
 				<div className="toolbar">
-					<div className="toolbar-group">
-						<Button variant="ghost" onClick={() => navigate(parentOf(path))}>
-							<Icon icon="solar:arrow-left-linear" width={15} />
-						</Button>
-						<BreadcrumbButton path={path} onNavigate={navigate} />
-					</div>
+					<BreadcrumbButton path={path} onNavigate={navigate} />
 					<div className="toolbar-group">{menuButton}</div>
 				</div>
 
@@ -914,14 +909,7 @@ export function FileBrowser() {
 	return (
 		<div className="page-shell animate-fadeUp">
 			<div className="toolbar">
-				<div className="toolbar-group">
-					{path !== "/" && (
-						<Button variant="ghost" onClick={() => navigate(parentOf(path))}>
-							<Icon icon="solar:arrow-left-linear" width={15} />
-						</Button>
-					)}
-					<BreadcrumbButton path={path} onNavigate={navigate} />
-				</div>
+				<BreadcrumbButton path={path} onNavigate={navigate} />
 				<div className="toolbar-group">
 					{viewToggle}
 					{menuButton}
