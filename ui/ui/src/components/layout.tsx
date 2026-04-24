@@ -46,7 +46,7 @@ export function Layout({ children }: { children: ReactNode }) {
 			<div className="layout-main">
 				<header className="layout-header">
 					<div className="flex items-center gap-2">
-						<div className="text-xs text-muted">localhost</div>
+						<div className="text-xs text-muted">{window.location.hostname}</div>
 					</div>
 					<div className="flex items-center gap-4">
 						<ThemeToggle />
