@@ -214,6 +214,10 @@ export function Dashboard() {
 	const [loading, setLoading] = useState(false);
 	const [isFile, setIsFile] = useState(false);
 
+	// Sort
+	const [sortKey, setSortKey] = useState<"name" | "size" | "mod_time">("name");
+	const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
 	// Modals
 	const [pathModalOpen, setPathModalOpen] = useState(false);
 	const [renameOpen, setRenameOpen] = useState(false);
@@ -338,29 +342,41 @@ export function Dashboard() {
 	// ── Directory view ──
 	type Row = Entry & { _isParent?: boolean };
 
-	const rows: Row[] = [];
-	if (path !== "/") {
-		rows.push({
-			name: "..",
-			is_dir: true,
-			size: 0,
-			mod_time: "",
-			_isParent: true,
-		});
-	}
-	if (data) {
-		const sorted = data.entries.sort((a, b) => {
-			if (a.is_dir !== b.is_dir) return a.is_dir ? -1 : 1;
-			return a.name.localeCompare(b.name);
-		});
-		rows.push(...sorted);
-	}
+	const toggleSort = (key: "name" | "size" | "mod_time") => {
+		if (sortKey === key) {
+			setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+		} else {
+			setSortKey(key);
+			setSortDir("asc");
+		}
+	};
+
+	const parentRow: Row | null =
+		path !== "/"
+			? { name: "..", is_dir: true, size: 0, mod_time: "", _isParent: true }
+			: null;
+
+	const sortedEntries = data
+		? [...data.entries].sort((a, b) => {
+				// Folders always before files
+				if (a.is_dir !== b.is_dir) return a.is_dir ? -1 : 1;
+				const dir = sortDir === "asc" ? 1 : -1;
+				if (sortKey === "name") return a.name.localeCompare(b.name) * dir;
+				if (sortKey === "size") return (a.size - b.size) * dir;
+				return (
+					(new Date(a.mod_time).getTime() - new Date(b.mod_time).getTime()) *
+					dir
+				);
+			})
+		: [];
+
+	const rows: Row[] = [...(parentRow ? [parentRow] : []), ...sortedEntries];
 
 	const columns: DataTableColumn<Row>[] = [
 		{
 			key: "icon",
 			label: "",
-			width: "2rem",
+			width: "2.5rem",
 			render: (row) => (
 				<Icon
 					icon={
@@ -378,11 +394,16 @@ export function Dashboard() {
 		{
 			key: "name",
 			label: "Name",
+			onSort: () => toggleSort("name"),
+			sortDir: sortKey === "name" ? sortDir : undefined,
 			render: (row) => <span className="font-medium">{row.name}</span>,
 		},
 		{
 			key: "size",
 			label: "Size",
+			width: "8rem",
+			onSort: () => toggleSort("size"),
+			sortDir: sortKey === "size" ? sortDir : undefined,
 			render: (row) => (
 				<span className="text-muted">
 					{row._isParent || row.is_dir ? "—" : formatSize(row.size)}
@@ -392,6 +413,9 @@ export function Dashboard() {
 		{
 			key: "mod_time",
 			label: "Modified",
+			width: "12rem",
+			onSort: () => toggleSort("mod_time"),
+			sortDir: sortKey === "mod_time" ? sortDir : undefined,
 			render: (row) => (
 				<span className="text-muted">
 					{row._isParent ? "—" : formatTime(row.mod_time)}

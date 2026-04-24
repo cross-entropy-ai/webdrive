@@ -347,6 +347,7 @@ body {
 }
 .datatable {
 	width: 100%;
+	table-layout: fixed;
 	text-align: left;
 	border-collapse: collapse;
 }
@@ -394,6 +395,8 @@ body {
 	padding: 0.625rem 1rem;
 	font-size: inherit;
 	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 .actions-cell {
 	padding: 0.375rem 1rem;
