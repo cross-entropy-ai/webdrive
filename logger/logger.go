@@ -57,18 +57,17 @@ func Middleware() gin.HandlerFunc {
 		methodColor := param.MethodColor()
 		resetColor := param.ResetColor()
 
-		// Format latency with limited decimal places
-		latency := param.Latency
+		ns := float64(param.Latency.Nanoseconds())
 		var latencyStr string
 		switch {
-		case latency < time.Microsecond:
-			latencyStr = fmt.Sprintf("%.0fns", float64(latency.Nanoseconds()))
-		case latency < time.Millisecond:
-			latencyStr = fmt.Sprintf("%.3fµs", float64(latency.Nanoseconds())/1e3)
-		case latency < time.Second:
-			latencyStr = fmt.Sprintf("%.3fms", float64(latency.Nanoseconds())/1e6)
+		case param.Latency < time.Microsecond:
+			latencyStr = fmt.Sprintf("%.0fns", ns)
+		case param.Latency < time.Millisecond:
+			latencyStr = fmt.Sprintf("%.3fµs", ns/1e3)
+		case param.Latency < time.Second:
+			latencyStr = fmt.Sprintf("%.3fms", ns/1e6)
 		default:
-			latencyStr = fmt.Sprintf("%.3fs", latency.Seconds())
+			latencyStr = fmt.Sprintf("%.3fs", param.Latency.Seconds())
 		}
 
 		// Build the main message part: status | latency | method path err

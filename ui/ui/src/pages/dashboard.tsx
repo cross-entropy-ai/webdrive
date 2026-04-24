@@ -181,68 +181,19 @@ export function Dashboard() {
 		}
 	};
 
-	const Breadcrumbs = () => {
-		const parts = path.split("/").filter(Boolean);
+	const breadcrumbParts = path.split("/").filter(Boolean);
+	const breadcrumbSegments = (() => {
 		let acc = "";
-		const segments = [
+		return [
 			{ name: "/", path: "/" },
-			...parts.map((p) => {
+			...breadcrumbParts.map((p) => {
 				acc += `/${p}`;
 				return { name: p, path: acc };
 			}),
 		];
-
-		// Build display label: truncate middle if deep
-		const label = path === "/" ? "/" : `/ ${parts.join(" / ")}`;
-
-		return (
-			<>
-				<button
-					type="button"
-					className="breadcrumb-btn"
-					onClick={() => setPathModalOpen(true)}
-				>
-					<Icon
-						icon="solar:folder-path-connect-linear"
-						width={14}
-						className="text-muted"
-						style={{ flexShrink: 0 }}
-					/>
-					<span className="breadcrumb-label">{label}</span>
-				</button>
-
-				<Modal open={pathModalOpen} onClose={() => setPathModalOpen(false)}>
-					<Modal.Header>Navigate to</Modal.Header>
-					<Modal.Body>
-						<div className="path-modal-list">
-							{segments.map((s, i) => (
-								<button
-									key={s.path}
-									type="button"
-									className={`path-modal-item${s.path === path ? " active" : ""}`}
-									onClick={() => {
-										navigate(s.path);
-										setPathModalOpen(false);
-									}}
-								>
-									<span
-										className="text-muted"
-										style={{ minWidth: `${i * 1}rem`, display: "inline-block" }}
-									/>
-									<Icon
-										icon={i === 0 ? "solar:home-linear" : "solar:folder-linear"}
-										width={14}
-										className="text-muted"
-									/>
-									<span>{s.name}</span>
-								</button>
-							))}
-						</div>
-					</Modal.Body>
-				</Modal>
-			</>
-		);
-	};
+	})();
+	const breadcrumbLabel =
+		path === "/" ? "/" : `/ ${breadcrumbParts.join(" / ")}`;
 
 	return (
 		<PageShell
@@ -251,7 +202,53 @@ export function Dashboard() {
 		>
 			<div className="h-full flex flex-col gap-4">
 				<div className="flex items-center justify-between gap-4">
-					<Breadcrumbs />
+					<>
+						<button
+							type="button"
+							className="breadcrumb-btn"
+							onClick={() => setPathModalOpen(true)}
+						>
+							<Icon
+								icon="solar:folder-path-connect-linear"
+								width={14}
+								className="text-muted"
+								style={{ flexShrink: 0 }}
+							/>
+							<span className="breadcrumb-label">{breadcrumbLabel}</span>
+						</button>
+
+						<Modal open={pathModalOpen} onClose={() => setPathModalOpen(false)}>
+							<Modal.Header>Navigate to</Modal.Header>
+							<Modal.Body>
+								<div className="path-modal-list">
+									{breadcrumbSegments.map((s, i) => (
+										<button
+											key={s.path}
+											type="button"
+											className={`path-modal-item${s.path === path ? " active" : ""}`}
+											onClick={() => {
+												navigate(s.path);
+												setPathModalOpen(false);
+											}}
+										>
+											<span
+												className="text-muted"
+												style={{ minWidth: `${i}rem`, display: "inline-block" }}
+											/>
+											<Icon
+												icon={
+													i === 0 ? "solar:home-linear" : "solar:folder-linear"
+												}
+												width={14}
+												className="text-muted"
+											/>
+											<span>{s.name}</span>
+										</button>
+									))}
+								</div>
+							</Modal.Body>
+						</Modal>
+					</>
 					<div className="search-wrapper">
 						<Input
 							placeholder="Filter files..."
