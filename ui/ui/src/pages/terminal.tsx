@@ -17,7 +17,7 @@ export function Terminal() {
 			fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
 			theme: getTheme(),
 			allowProposedApi: true,
-			rightClickSelectsWord: true,
+			rightClickSelectsWord: false,
 		});
 		termRef.current = term;
 
