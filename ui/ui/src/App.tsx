@@ -1,14 +1,15 @@
-import { FileBrowser } from "./FileBrowser";
+import { ThemeProvider } from "next-themes";
+import { Layout } from "./components/layout";
+import { Dashboard } from "./pages/dashboard";
 import "./index.css";
 
 export function App() {
 	return (
-		<div className="app">
-			<header className="topbar">
-				<h1>webdrive</h1>
-			</header>
-			<FileBrowser />
-		</div>
+		<ThemeProvider attribute="class" disableTransitionOnChange>
+			<Layout>
+				<Dashboard />
+			</Layout>
+		</ThemeProvider>
 	);
 }
 
