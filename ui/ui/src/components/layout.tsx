@@ -1,7 +1,6 @@
 import { Icon } from "@iconify/react";
 import { useTheme } from "next-themes";
 import { useEffect, useState, type ReactNode } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 
 function ThemeToggle() {
 	const { theme, setTheme } = useTheme();
@@ -26,22 +25,8 @@ function ThemeToggle() {
 	);
 }
 
-const navItems = [
-	{ path: "/", icon: "solar:monitor-linear", label: "Dashboard" },
-	{ path: "/files", icon: "solar:folder-with-files-linear", label: "Files" },
-	{ path: "/terminal", icon: "mdi:console", label: "Terminal" },
-];
-
 export function Layout({ children }: { children: ReactNode }) {
 	const [hostname, setHostname] = useState<string>("");
-	const [sidebarOpen, setSidebarOpen] = useState(false);
-	const location = useLocation();
-	const navigate = useNavigate();
-
-	const activeTab =
-		navItems.find(
-			(item) => item.path !== "/" && location.pathname.startsWith(item.path),
-		)?.path ?? "/";
 
 	useEffect(() => {
 		fetch("/api/info")
@@ -50,66 +35,17 @@ export function Layout({ children }: { children: ReactNode }) {
 			.catch(() => setHostname(window.location.hostname));
 	}, []);
 
-	useEffect(() => {
-		const onResize = () => {
-			if (window.innerWidth >= 768) setSidebarOpen(false);
-		};
-		window.addEventListener("resize", onResize);
-		return () => window.removeEventListener("resize", onResize);
-	}, []);
-
 	return (
 		<div className="layout-container">
-			{sidebarOpen && (
-				<div
-					className="sidebar-overlay"
-					onClick={() => setSidebarOpen(false)}
-					aria-hidden="true"
-				/>
-			)}
-
-			<div className={`layout-sidebar${sidebarOpen ? " sidebar-open" : ""}`}>
-				<div className="chrome-bar">
-					<span className="text-accent font-semibold">webdrive</span>
-					<button
-						type="button"
-						className="icon-btn sidebar-close-btn"
-						onClick={() => setSidebarOpen(false)}
-						aria-label="Close sidebar"
-					>
-						<Icon icon="solar:close-circle-linear" width={14} />
-					</button>
-				</div>
-				<div className="sidebar-body">
-					<div className="nav-section-label">System</div>
-					{navItems.map((item) => (
-						<button
-							key={item.path}
-							type="button"
-							className={`nav-item${activeTab === item.path ? " active" : ""}`}
-							onClick={() => {
-								navigate(item.path);
-								setSidebarOpen(false);
-							}}
-						>
-							<Icon icon={item.icon} width={14} />
-							<span>{item.label}</span>
-						</button>
-					))}
-				</div>
-			</div>
-
 			<div className="layout-main">
 				<header className="chrome-bar">
 					<div className="flex items-center gap-2">
-						<button
-							type="button"
-							className="icon-btn sidebar-menu-btn"
-							onClick={() => setSidebarOpen(true)}
-							aria-label="Open sidebar"
-						>
-							<Icon icon="solar:hamburger-menu-linear" width={14} />
-						</button>
+						<Icon
+							icon="solar:folder-with-files-linear"
+							width={14}
+							className="text-muted"
+						/>
+						<span className="text-accent font-semibold">webdrive</span>
 						<span className="text-xs text-muted">{hostname}</span>
 					</div>
 					<ThemeToggle />

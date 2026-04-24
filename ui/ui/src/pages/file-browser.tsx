@@ -659,21 +659,18 @@ export function FileBrowser() {
 	const location = useLocation();
 	const routerNavigate = useNavigate();
 
-	// Derive file path from URL: /files/some%20dir → /some dir
-	const path =
-		decodeURIComponent(location.pathname.replace(/^\/files/, "")) || "/";
+	const path = decodeURIComponent(location.pathname) || "/";
 
 	const navigate = (p: string) => {
 		if (p === "/") {
-			routerNavigate("/files");
+			routerNavigate("/");
 			return;
 		}
-		// Encode each path segment to handle spaces and special chars
 		const encoded = p
 			.split("/")
 			.map((seg) => encodeURIComponent(seg))
 			.join("/");
-		routerNavigate(`/files${encoded}`);
+		routerNavigate(encoded);
 	};
 
 	const [data, setData] = useState<ListResponse | null>(null);
