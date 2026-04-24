@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 type SystemStats = {
 	hostname: string;
 	uptime_seconds: number;
-	cpu: { count: number; arch: string; os: string };
+	cpu: { count: number; arch: string; os: string; load_average: number[] };
 	memory: { total: number; used: number; go_alloc: number; go_sys: number };
-	disk: { path: string; total: number; free: number; used: number };
+	disks: { mount: string; total: number; free: number; used: number }[];
+	network: { name: string; addrs: string[] }[];
+	go_runtime: { version: string; goroutines: number; num_gc: number };
 };
 
 function formatBytes(bytes: number): string {
@@ -25,41 +27,57 @@ function formatUptime(seconds: number): string {
 	const d = Math.floor(seconds / 86400);
 	const h = Math.floor((seconds % 86400) / 3600);
 	const m = Math.floor((seconds % 3600) / 60);
+	const s = seconds % 60;
 	if (d > 0) return `${d}d ${h}h ${m}m`;
-	if (h > 0) return `${h}h ${m}m`;
-	return `${m}m`;
+	if (h > 0) return `${h}h ${m}m ${s}s`;
+	if (m > 0) return `${m}m ${s}s`;
+	return `${s}s`;
 }
 
-function pct(used: number, total: number): string {
-	if (total === 0) return "0";
-	return ((used / total) * 100).toFixed(1);
+function pct(used: number, total: number): number {
+	if (total === 0) return 0;
+	return (used / total) * 100;
 }
 
-function StatCard({
+function Bar({ value, color }: { value: number; color?: string }) {
+	return (
+		<div className="usage-bar">
+			<div
+				className="usage-bar-fill"
+				style={{
+					width: `${Math.min(value, 100)}%`,
+					backgroundColor: color ?? (value > 90 ? "var(--danger)" : value > 70 ? "var(--warning)" : "var(--accent)"),
+				}}
+			/>
+		</div>
+	);
+}
+
+function Section({
 	icon,
-	label,
+	title,
 	children,
 }: {
 	icon: string;
-	label: string;
+	title: string;
 	children: React.ReactNode;
 }) {
 	return (
 		<div className="stat-card">
 			<div className="stat-card-header">
-				<Icon icon={icon} width={14} className="text-muted" />
-				<span className="text-sm text-muted">{label}</span>
+				<Icon icon={icon} width={13} className="text-muted" />
+				<span className="text-sm text-muted">{title}</span>
 			</div>
 			<div className="stat-card-body">{children}</div>
 		</div>
 	);
 }
 
-function Bar({ used, total }: { used: number; total: number }) {
-	const p = total > 0 ? (used / total) * 100 : 0;
+function Row({ label, value }: { label: string; value: React.ReactNode }) {
 	return (
-		<div className="usage-bar">
-			<div className="usage-bar-fill" style={{ width: `${p}%` }} />
+		<div className="stat-row">
+			<span className="text-muted">{label}</span>
+			<span className="font-medium">{value}</span>
 		</div>
 	);
 }
@@ -107,69 +125,100 @@ export function Dashboard() {
 		);
 	}
 
+	const memPct = pct(stats.memory.used, stats.memory.total);
+	const load = stats.cpu.load_average;
+
 	return (
 		<div className="page-shell animate-fadeUp">
 			<div className="stat-grid">
-				<StatCard icon="solar:server-square-linear" label="System">
+				{/* System */}
+				<Section icon="solar:server-square-linear" title="System">
 					<div className="stat-rows">
-						<div className="stat-row">
-							<span className="text-muted">Hostname</span>
-							<span className="font-medium">{stats.hostname}</span>
-						</div>
-						<div className="stat-row">
-							<span className="text-muted">OS / Arch</span>
-							<span className="font-medium">{stats.cpu.os} / {stats.cpu.arch}</span>
-						</div>
-						<div className="stat-row">
-							<span className="text-muted">Uptime</span>
-							<span className="font-medium">{formatUptime(stats.uptime_seconds)}</span>
-						</div>
-						<div className="stat-row">
-							<span className="text-muted">CPUs</span>
-							<span className="font-medium">{stats.cpu.count}</span>
-						</div>
+						<Row label="Hostname" value={stats.hostname} />
+						<Row label="OS / Arch" value={`${stats.cpu.os} / ${stats.cpu.arch}`} />
+						<Row label="Uptime" value={formatUptime(stats.uptime_seconds)} />
 					</div>
-				</StatCard>
+				</Section>
 
-				<StatCard icon="solar:cpu-bolt-linear" label="Memory">
+				{/* CPU */}
+				<Section icon="solar:cpu-bolt-linear" title="CPU">
 					<div className="stat-rows">
-						<div className="stat-row">
-							<span className="text-muted">Used / Total</span>
-							<span className="font-medium">
-								{formatBytes(stats.memory.used)} / {formatBytes(stats.memory.total)}
-							</span>
-						</div>
-						<Bar used={stats.memory.used} total={stats.memory.total} />
-						<div className="stat-row">
-							<span className="text-muted">Usage</span>
-							<span className="font-medium">{pct(stats.memory.used, stats.memory.total)}%</span>
-						</div>
-						<div className="stat-row">
-							<span className="text-muted">Go Alloc</span>
-							<span className="text-muted">{formatBytes(stats.memory.go_alloc)}</span>
-						</div>
+						<Row label="Cores" value={stats.cpu.count} />
+						<Row
+							label="Load Avg"
+							value={`${load[0]?.toFixed(2)}  ${load[1]?.toFixed(2)}  ${load[2]?.toFixed(2)}`}
+						/>
+						{load[0] !== undefined && (
+							<>
+								<Bar value={(load[0] / stats.cpu.count) * 100} />
+								<Row
+									label="Load / Cores"
+									value={`${((load[0] / stats.cpu.count) * 100).toFixed(0)}%`}
+								/>
+							</>
+						)}
 					</div>
-				</StatCard>
+				</Section>
 
-				<StatCard icon="solar:hard-drive-linear" label={`Disk — ${stats.disk.path}`}>
+				{/* Memory */}
+				<Section icon="solar:ram-linear" title="Memory">
 					<div className="stat-rows">
-						<div className="stat-row">
-							<span className="text-muted">Used / Total</span>
-							<span className="font-medium">
-								{formatBytes(stats.disk.used)} / {formatBytes(stats.disk.total)}
-							</span>
-						</div>
-						<Bar used={stats.disk.used} total={stats.disk.total} />
-						<div className="stat-row">
-							<span className="text-muted">Usage</span>
-							<span className="font-medium">{pct(stats.disk.used, stats.disk.total)}%</span>
-						</div>
-						<div className="stat-row">
-							<span className="text-muted">Free</span>
-							<span className="font-medium">{formatBytes(stats.disk.free)}</span>
-						</div>
+						<Row
+							label="Used / Total"
+							value={`${formatBytes(stats.memory.used)} / ${formatBytes(stats.memory.total)}`}
+						/>
+						<Bar value={memPct} />
+						<Row label="Usage" value={`${memPct.toFixed(1)}%`} />
 					</div>
-				</StatCard>
+				</Section>
+
+				{/* Disks */}
+				{stats.disks.map((disk) => {
+					const dp = pct(disk.used, disk.total);
+					return (
+						<Section
+							key={disk.mount}
+							icon="solar:hard-drive-linear"
+							title={`Disk ${disk.mount}`}
+						>
+							<div className="stat-rows">
+								<Row
+									label="Used / Total"
+									value={`${formatBytes(disk.used)} / ${formatBytes(disk.total)}`}
+								/>
+								<Bar value={dp} />
+								<Row label="Usage" value={`${dp.toFixed(1)}%`} />
+								<Row label="Free" value={formatBytes(disk.free)} />
+							</div>
+						</Section>
+					);
+				})}
+
+				{/* Network */}
+				{stats.network.length > 0 && (
+					<Section icon="solar:global-linear" title="Network">
+						<div className="stat-rows">
+							{stats.network.map((iface) => (
+								<Row
+									key={iface.name}
+									label={iface.name}
+									value={iface.addrs.join(", ")}
+								/>
+							))}
+						</div>
+					</Section>
+				)}
+
+				{/* Runtime */}
+				<Section icon="solar:code-square-linear" title="Runtime">
+					<div className="stat-rows">
+						<Row label="Go" value={stats.go_runtime.version} />
+						<Row label="Goroutines" value={stats.go_runtime.goroutines} />
+						<Row label="GC Cycles" value={stats.go_runtime.num_gc} />
+						<Row label="Go Alloc" value={formatBytes(stats.memory.go_alloc)} />
+						<Row label="Go Sys" value={formatBytes(stats.memory.go_sys)} />
+					</div>
+				</Section>
 			</div>
 		</div>
 	);

@@ -16,7 +16,6 @@ type sysMemory struct {
 func getSystemMemory() sysMemory {
 	var m sysMemory
 
-	// Total memory via sysctl
 	mib := [2]int32{6 /* CTL_HW */, 24 /* HW_MEMSIZE */}
 	var size uint64
 	length := uintptr(8)
@@ -30,12 +29,11 @@ func getSystemMemory() sysMemory {
 	)
 	m.total = size
 
-	// Used memory from vm_stat (pages * page_size)
 	out, err := exec.Command("vm_stat").Output()
 	if err != nil {
 		return m
 	}
-	pageSize := uint64(16384) // default for Apple Silicon
+	pageSize := uint64(16384)
 	lines := strings.Split(string(out), "\n")
 	if strings.Contains(lines[0], "page size of") {
 		parts := strings.Fields(lines[0])
@@ -63,4 +61,44 @@ func getSystemMemory() sysMemory {
 	m.used = (active + wired + compressed) * pageSize
 
 	return m
+}
+
+func getLoadAverage() []float64 {
+	out, err := exec.Command("sysctl", "-n", "vm.loadavg").Output()
+	if err != nil {
+		return []float64{0, 0, 0}
+	}
+	s := strings.Trim(strings.TrimSpace(string(out)), "{}")
+	fields := strings.Fields(s)
+	result := make([]float64, 3)
+	for i := 0; i < 3 && i < len(fields); i++ {
+		result[i], _ = strconv.ParseFloat(fields[i], 64)
+	}
+	return result
+}
+
+func getSystemMounts() []string {
+	out, err := exec.Command("df", "-P").Output()
+	if err != nil {
+		return []string{"/"}
+	}
+	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+	var mounts []string
+	for _, line := range lines[1:] {
+		fields := strings.Fields(line)
+		if len(fields) < 6 {
+			continue
+		}
+		mount := fields[len(fields)-1]
+		// Skip virtual/system filesystems
+		if strings.HasPrefix(mount, "/dev") || strings.HasPrefix(mount, "/proc") ||
+			strings.HasPrefix(mount, "/sys") || mount == "/private/var/vm" {
+			continue
+		}
+		mounts = append(mounts, mount)
+	}
+	if len(mounts) == 0 {
+		return []string{"/"}
+	}
+	return mounts
 }
