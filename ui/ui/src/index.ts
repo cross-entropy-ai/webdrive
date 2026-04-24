@@ -2,10 +2,21 @@ import { serve } from "bun";
 import index from "./index.html";
 
 const backend = process.env.WEBDRIVE_BACKEND ?? "http://localhost:8080";
+const wsBackend = backend.replace(/^http/, "ws");
 
 const server = serve({
 	routes: {
 		"/api/*": async (req) => {
+			// WebSocket upgrade — proxy to backend
+			if (req.headers.get("upgrade")?.toLowerCase() === "websocket") {
+				const url = new URL(req.url);
+				const target = wsBackend + url.pathname + url.search;
+				const ws = new WebSocket(target);
+				return new Response(null, {
+					status: 101,
+					webSocket: ws,
+				} as any);
+			}
 			const url = new URL(req.url);
 			const target = backend + url.pathname + url.search;
 			return fetch(target, {
@@ -23,4 +34,4 @@ const server = serve({
 	},
 });
 
-console.log(`🚀 UI dev server at ${server.url} (proxying /api -> ${backend})`);
+console.log(`UI dev server at ${server.url} (proxying /api -> ${backend})`);

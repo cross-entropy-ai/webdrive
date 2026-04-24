@@ -3,7 +3,9 @@ module github.com/cross-entropy-ai/webdrive
 go 1.26.1
 
 require (
+	github.com/creack/pty v1.1.24
 	github.com/gin-gonic/gin v1.12.0
+	github.com/gorilla/websocket v1.5.3
 	github.com/spf13/cobra v1.10.2
 )
 

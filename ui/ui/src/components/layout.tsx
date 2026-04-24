@@ -29,6 +29,7 @@ function ThemeToggle() {
 const navItems = [
 	{ path: "/", icon: "solar:monitor-linear", label: "Dashboard" },
 	{ path: "/files", icon: "solar:folder-with-files-linear", label: "Files" },
+	{ path: "/terminal", icon: "solar:command-linear", label: "Terminal" },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -37,7 +38,8 @@ export function Layout({ children }: { children: ReactNode }) {
 	const location = useLocation();
 	const navigate = useNavigate();
 
-	const activeTab = location.pathname.startsWith("/files") ? "/files" : "/";
+	const p = location.pathname;
+	const activeTab = p.startsWith("/files") ? "/files" : p.startsWith("/terminal") ? "/terminal" : "/";
 
 	useEffect(() => {
 		fetch("/api/info")

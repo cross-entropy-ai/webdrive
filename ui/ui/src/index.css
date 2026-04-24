@@ -827,3 +827,16 @@ body {
 	border-radius: 1px;
 	transition: width 0.3s ease;
 }
+
+/* ── Terminal ───────────────────────────────────────────────── */
+
+.terminal-container {
+	height: 100%;
+	padding: 0.5rem;
+}
+.terminal-container .xterm {
+	height: 100%;
+}
+.terminal-container .xterm-viewport {
+	border-radius: var(--radius);
+}

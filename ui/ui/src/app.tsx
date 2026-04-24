@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "./components/layout";
 import { Dashboard } from "./pages/dashboard";
 import { FileBrowser } from "./pages/file-browser";
+import { Terminal } from "./pages/terminal";
 import "./index.css";
 
 export function App() {
@@ -13,6 +14,7 @@ export function App() {
 					<Routes>
 						<Route path="/" element={<Dashboard />} />
 						<Route path="/files/*" element={<FileBrowser />} />
+						<Route path="/terminal" element={<Terminal />} />
 						<Route path="*" element={<Navigate to="/" replace />} />
 					</Routes>
 				</Layout>
