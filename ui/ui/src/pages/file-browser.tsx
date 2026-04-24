@@ -505,12 +505,21 @@ export function FileBrowser() {
 	const location = useLocation();
 	const routerNavigate = useNavigate();
 
-	// Derive file path from URL: /files/some/dir → /some/dir
-	const path = location.pathname.replace(/^\/files/, "") || "/";
+	// Derive file path from URL: /files/some%20dir → /some dir
+	const path =
+		decodeURIComponent(location.pathname.replace(/^\/files/, "")) || "/";
 
 	const navigate = (p: string) => {
-		const urlPath = p === "/" ? "/files" : `/files${p}`;
-		routerNavigate(urlPath);
+		if (p === "/") {
+			routerNavigate("/files");
+			return;
+		}
+		// Encode each path segment to handle spaces and special chars
+		const encoded = p
+			.split("/")
+			.map((seg) => encodeURIComponent(seg))
+			.join("/");
+		routerNavigate(`/files${encoded}`);
 	};
 
 	const [data, setData] = useState<ListResponse | null>(null);
