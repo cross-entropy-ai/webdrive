@@ -1,20 +1,22 @@
 {
-  "name": "ui",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "bun --hot src/index.ts",
-    "build": "bun build ./src/index.html --outdir=dist --target=browser --minify --define:process.env.NODE_ENV='\"production\"'",
-    "start": "NODE_ENV=production bun src/index.ts"
-  },
-  "dependencies": {
-    "react": "^19",
-    "react-dom": "^19"
-  },
-  "devDependencies": {
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@types/bun": "latest"
-  }
+	"name": "ui",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "bun --hot src/index.ts",
+		"build": "bun build ./src/index.html --outdir=dist --target=browser --minify --define:process.env.NODE_ENV='\"production\"'",
+		"start": "NODE_ENV=production bun src/index.ts",
+		"fmt": "biome format --write ."
+	},
+	"dependencies": {
+		"react": "^19",
+		"react-dom": "^19"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.4.13",
+		"@types/bun": "latest",
+		"@types/react": "^19",
+		"@types/react-dom": "^19"
+	}
 }

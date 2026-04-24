@@ -34,8 +34,10 @@ backend:
 dev:
 	go run $(CMD)
 
-fmt:
+## fmt: format Go code (go fmt) and frontend code (biome via bun)
+fmt: install-ui
 	go fmt ./...
+	cd $(UI_DIR) && bun run fmt
 
 tidy:
 	go mod tidy
