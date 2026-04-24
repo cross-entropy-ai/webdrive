@@ -1,7 +1,7 @@
 import { serve } from "bun";
 import index from "./index.html";
 
-const backend = process.env.WEBDRIVE_BACKEND ?? "http://localhost:8080";
+const backend = process.env.WEBDRIVE_BACKEND ?? "http://localhost:9090";
 const wsBackend = backend.replace(/^http/, "ws");
 
 const server = serve({

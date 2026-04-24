@@ -24,7 +24,7 @@ func main() {
 		RunE:  run,
 	}
 	root.Flags().StringVar(&flagHost, "host", "0.0.0.0", "host to bind")
-	root.Flags().IntVarP(&flagPort, "port", "p", 8080, "port to listen on")
+	root.Flags().IntVarP(&flagPort, "port", "p", 9090, "port to listen on")
 	root.Flags().StringVarP(&flagDir, "dir", "d", "", "directory to serve (overrides positional arg)")
 
 	if err := root.Execute(); err != nil {
