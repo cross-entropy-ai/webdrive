@@ -115,6 +115,10 @@ body {
 	border-radius: var(--radius);
 	white-space: nowrap;
 }
+.btn-label {}
+@media (max-width: 767px) {
+	.btn-label { display: none; }
+}
 .btn:disabled {
 	opacity: 0.4;
 	pointer-events: none;

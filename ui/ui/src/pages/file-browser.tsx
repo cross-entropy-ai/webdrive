@@ -370,12 +370,12 @@ export function FileBrowser() {
 			>
 				<Button variant="ghost">
 					<Icon icon="solar:download-square-linear" width={15} />
-					Download
+					<span className="btn-label">Download</span>
 				</Button>
 			</a>
 			<Button variant="ghost" onClick={() => setRenameOpen(true)}>
 				<Icon icon="solar:pen-linear" width={15} />
-				Rename
+				<span className="btn-label">Rename</span>
 			</Button>
 		</div>
 	);
