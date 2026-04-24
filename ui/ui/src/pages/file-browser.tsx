@@ -788,7 +788,7 @@ export function FileBrowser() {
 		>
 			<Icon
 				icon={
-					viewMode === "list" ? "solar:gallery-linear" : "solar:list-linear"
+					viewMode === "list" ? "solar:widget-linear" : "solar:list-linear"
 				}
 				width={15}
 			/>
