@@ -576,23 +576,73 @@ export function FileBrowser() {
 		navigate(joinPath(parentOf(path), newName));
 	};
 
-	// Shared toolbar actions (right side)
-	const actions = (
-		<div className="toolbar-group">
-			<a
-				href={`/api/fs/download?path=${encodeURIComponent(path)}`}
-				target="_blank"
-				rel="noreferrer"
-			>
-				<Button variant="ghost">
-					<Icon icon="solar:download-square-linear" width={15} />
-					<span className="btn-label">Download</span>
-				</Button>
-			</a>
-			<Button variant="ghost" onClick={() => setRenameOpen(true)}>
-				<Icon icon="solar:pen-linear" width={15} />
-				<span className="btn-label">Rename</span>
+	// Popup menu
+	const [menuOpen, setMenuOpen] = useState(false);
+	const menuRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (!menuOpen) return;
+		const onClick = (e: MouseEvent) => {
+			if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+				setMenuOpen(false);
+			}
+		};
+		document.addEventListener("mousedown", onClick);
+		return () => document.removeEventListener("mousedown", onClick);
+	}, [menuOpen]);
+
+	const menuButton = (
+		<div className="popup-anchor" ref={menuRef}>
+			<Button variant="ghost" onClick={() => setMenuOpen(!menuOpen)}>
+				<Icon icon="solar:menu-dots-bold" width={15} />
 			</Button>
+			{menuOpen && (
+				<div className="popup-menu">
+					{path !== "/" && (
+						<>
+							<a
+								href={`/api/fs/download?path=${encodeURIComponent(path)}`}
+								target="_blank"
+								rel="noreferrer"
+								className="popup-item"
+								onClick={() => setMenuOpen(false)}
+							>
+								<Icon icon="solar:download-square-linear" width={14} />
+								Download
+							</a>
+							<button
+								type="button"
+								className="popup-item"
+								onClick={() => {
+									setRenameOpen(true);
+									setMenuOpen(false);
+								}}
+							>
+								<Icon icon="solar:pen-linear" width={14} />
+								Rename
+							</button>
+						</>
+					)}
+					<button
+						type="button"
+						className="popup-item"
+						onClick={() => {
+							setViewMode(viewMode === "list" ? "gallery" : "list");
+							setMenuOpen(false);
+						}}
+					>
+						<Icon
+							icon={
+								viewMode === "list"
+									? "solar:gallery-linear"
+									: "solar:list-linear"
+							}
+							width={14}
+						/>
+						{viewMode === "list" ? "Gallery" : "List"}
+					</button>
+				</div>
+			)}
 		</div>
 	);
 
@@ -607,7 +657,7 @@ export function FileBrowser() {
 						</Button>
 						<BreadcrumbButton path={path} onNavigate={navigate} />
 					</div>
-					{actions}
+					{menuButton}
 				</div>
 
 				{error && <div className="error-box">Error: {error}</div>}
@@ -728,36 +778,7 @@ export function FileBrowser() {
 					)}
 					<BreadcrumbButton path={path} onNavigate={navigate} />
 				</div>
-				<div className="toolbar-group">
-					{path !== "/" && actions}
-					{viewMode === "gallery" && (
-						<input
-							type="range"
-							className="zoom-slider"
-							min={ZOOM_MIN}
-							max={ZOOM_MAX}
-							value={ZOOM_MAX + ZOOM_MIN - galleryCols}
-							onChange={(e) =>
-								setGalleryCols(ZOOM_MAX + ZOOM_MIN - Number(e.target.value))
-							}
-						/>
-					)}
-					<Button
-						variant={viewMode === "gallery" ? "primary" : "ghost"}
-						onClick={() =>
-							setViewMode(viewMode === "list" ? "gallery" : "list")
-						}
-					>
-						<Icon
-							icon={
-								viewMode === "list"
-									? "solar:gallery-linear"
-									: "solar:list-linear"
-							}
-							width={15}
-						/>
-					</Button>
-				</div>
+				{menuButton}
 			</div>
 
 			{error && <div className="error-box">Error: {error}</div>}
@@ -765,6 +786,21 @@ export function FileBrowser() {
 			<div className="flex-1">
 				{viewMode === "gallery" ? (
 					<div className="datatable-wrapper">
+						<div className="datatable-header-bar">
+							<span className="text-sm text-muted">
+								{sortedEntries.length} items
+							</span>
+							<input
+								type="range"
+								className="zoom-slider"
+								min={ZOOM_MIN}
+								max={ZOOM_MAX}
+								value={ZOOM_MAX + ZOOM_MIN - galleryCols}
+								onChange={(e) =>
+									setGalleryCols(ZOOM_MAX + ZOOM_MIN - Number(e.target.value))
+								}
+							/>
+						</div>
 						<div className="datatable-scroll">
 							{loading && !data ? (
 								<div className="datatable-state">loading...</div>

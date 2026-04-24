@@ -521,6 +521,45 @@ body {
 	justify-content: flex-end;
 }
 
+/* ── Popup Menu ─────────────────────────────────────────────── */
+
+.popup-anchor {
+	position: relative;
+}
+.popup-menu {
+	position: absolute;
+	top: 100%;
+	right: 0;
+	margin-top: 0.25rem;
+	min-width: 9rem;
+	background-color: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	padding: 0.25rem;
+	z-index: 20;
+	display: flex;
+	flex-direction: column;
+}
+.popup-item {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.375rem 0.625rem;
+	font-size: inherit;
+	font-family: inherit;
+	color: var(--foreground);
+	background: transparent;
+	border: none;
+	border-radius: var(--radius);
+	cursor: pointer;
+	text-decoration: none;
+	transition: background-color 0.1s;
+	white-space: nowrap;
+}
+.popup-item:hover {
+	background-color: color-mix(in srgb, var(--default) 60%, transparent);
+}
+
 /* ── Zoom Slider ────────────────────────────────────────────── */
 
 .zoom-slider {
