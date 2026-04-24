@@ -28,7 +28,7 @@ export function Layout({ children }: { children: ReactNode }) {
 			<div className="layout-sidebar">
 				<div className="layout-header">
 					<div>
-						<span className="text-sm text-accent font-semibold">Vault</span>
+						<span className="text-sm text-accent font-semibold">webdrive</span>
 						<span style={{ fontSize: "10px", marginLeft: "0.5rem" }} className="text-muted">v1.0.0</span>
 					</div>
 				</div>
