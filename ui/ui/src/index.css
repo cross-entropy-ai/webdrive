@@ -850,3 +850,11 @@ body {
 .terminal-container .xterm {
 	height: 100%;
 }
+.terminal-container .xterm-viewport {
+	transition: scrollbar-color 0.3s;
+	scrollbar-color: transparent transparent;
+}
+.terminal-container:hover .xterm-viewport,
+.terminal-container .xterm-viewport:active {
+	scrollbar-color: var(--border) transparent;
+}
