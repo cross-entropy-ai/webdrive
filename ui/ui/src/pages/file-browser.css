@@ -127,10 +127,14 @@
 	z-index: 20;
 	display: flex;
 	flex-direction: column;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
+	box-shadow:
+		0 4px 12px rgba(0, 0, 0, 0.08),
+		0 1px 3px rgba(0, 0, 0, 0.06);
 }
 .dark .popup-menu {
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
+	box-shadow:
+		0 4px 12px rgba(0, 0, 0, 0.3),
+		0 1px 3px rgba(0, 0, 0, 0.2);
 }
 .popup-item {
 	display: flex;
@@ -258,6 +262,52 @@
 	display: -webkit-box;
 	-webkit-line-clamp: 2;
 	-webkit-box-orient: vertical;
+}
+
+/* ── File List ──────────────────────────────────────────────── */
+
+.file-list {
+	display: flex;
+	flex-direction: column;
+}
+.file-list-item {
+	display: flex;
+	align-items: center;
+	gap: 0.625rem;
+	padding: 0.5rem 0.75rem;
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	font-family: inherit;
+	font-size: inherit;
+	color: var(--foreground);
+	text-align: left;
+	border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+	transition: background-color 0.1s;
+}
+.file-list-item:hover {
+	background-color: color-mix(in srgb, var(--default) 50%, transparent);
+}
+.file-list-item:last-child {
+	border-bottom: none;
+}
+.file-list-info {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+.file-list-name {
+	font-weight: 500;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.file-list-meta {
+	font-size: var(--text-sm);
+	color: var(--muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 /* ── File Preview ───────────────────────────────────────────── */

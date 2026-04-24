@@ -5,7 +5,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../components/button";
 import { previewUrl, downloadUrl } from "../lib/api";
 import { formatBytes } from "../lib/format";
-import { type DataTableColumn, DataTable } from "../components/data-table";
 import { Modal } from "../components/modal";
 import { RenameModal } from "../components/rename-modal";
 import "./file-browser.css";
@@ -825,22 +824,6 @@ export function FileBrowser() {
 	}
 
 	// ── Directory view ──
-	type Row = Entry & { _isParent?: boolean };
-
-	const toggleSort = (key: "name" | "size" | "mod_time") => {
-		if (sortKey === key) {
-			setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-		} else {
-			setSortKey(key);
-			setSortDir("asc");
-		}
-	};
-
-	const parentRow: Row | null =
-		path !== "/"
-			? { name: "..", is_dir: true, size: 0, mod_time: "", _isParent: true }
-			: null;
-
 	const sortedEntries = data
 		? [...data.entries].sort((a, b) => {
 				if (a.is_dir !== b.is_dir) return a.is_dir ? -1 : 1;
@@ -853,60 +836,6 @@ export function FileBrowser() {
 				);
 			})
 		: [];
-
-	const rows: Row[] = [...(parentRow ? [parentRow] : []), ...sortedEntries];
-
-	const columns: DataTableColumn<Row>[] = [
-		{
-			key: "icon",
-			label: "",
-			width: "2.5rem",
-			render: (row) => (
-				<Icon
-					icon={
-						row._isParent
-							? "solar:arrow-left-linear"
-							: row.is_dir
-								? "solar:folder-bold-duotone"
-								: "solar:document-text-linear"
-					}
-					width={15}
-					className={row.is_dir ? "text-accent" : "text-muted"}
-				/>
-			),
-		},
-		{
-			key: "name",
-			label: "Name",
-			onSort: () => toggleSort("name"),
-			sortDir: sortKey === "name" ? sortDir : undefined,
-			render: (row) => <span className="font-medium">{row.name}</span>,
-		},
-		{
-			key: "size",
-			label: "Size",
-			width: "7rem",
-			onSort: () => toggleSort("size"),
-			sortDir: sortKey === "size" ? sortDir : undefined,
-			render: (row) => (
-				<span className="text-muted">
-					{row._isParent || row.is_dir ? "—" : formatBytes(row.size)}
-				</span>
-			),
-		},
-		{
-			key: "mod_time",
-			label: "Modified",
-			width: "11rem",
-			onSort: () => toggleSort("mod_time"),
-			sortDir: sortKey === "mod_time" ? sortDir : undefined,
-			render: (row) => (
-				<span className="text-muted">
-					{row._isParent ? "—" : formatTime(row.mod_time)}
-				</span>
-			),
-		},
-	];
 
 	return (
 		<div className="page-shell animate-fadeUp">
@@ -955,17 +884,60 @@ export function FileBrowser() {
 						</div>
 					</div>
 				) : (
-					<DataTable<Row>
-						columns={columns}
-						data={rows}
-						keyExtractor={(row) => (row._isParent ? "__parent__" : row.name)}
-						isLoading={loading && !data}
-						emptyMessage="Empty directory."
-						onRowClick={(row) => {
-							if (row._isParent) navigate(parentOf(path));
-							else navigate(joinPath(path, row.name));
-						}}
-					/>
+					<div className="datatable-wrapper">
+						<div className="datatable-scroll">
+							{loading && !data ? (
+								<div className="datatable-state">loading...</div>
+							) : sortedEntries.length === 0 && path === "/" ? (
+								<div className="datatable-state">Empty directory.</div>
+							) : (
+								<div className="file-list">
+									{path !== "/" && (
+										<button
+											type="button"
+											className="file-list-item"
+											onClick={() => navigate(parentOf(path))}
+										>
+											<Icon
+												icon="solar:arrow-left-linear"
+												width={16}
+												className="text-muted"
+											/>
+											<div className="file-list-info">
+												<span className="file-list-name">..</span>
+											</div>
+										</button>
+									)}
+									{sortedEntries.map((entry) => (
+										<button
+											key={entry.name}
+											type="button"
+											className="file-list-item"
+											onClick={() => navigate(joinPath(path, entry.name))}
+										>
+											<Icon
+												icon={
+													entry.is_dir
+														? "solar:folder-bold-duotone"
+														: fileIcon(entry.name, false)
+												}
+												width={16}
+												className={entry.is_dir ? "text-accent" : "text-muted"}
+											/>
+											<div className="file-list-info">
+												<span className="file-list-name">{entry.name}</span>
+												<span className="file-list-meta">
+													{!entry.is_dir && formatBytes(entry.size)}
+													{!entry.is_dir && entry.mod_time && " · "}
+													{entry.mod_time && formatTime(entry.mod_time)}
+												</span>
+											</div>
+										</button>
+									))}
+								</div>
+							)}
+						</div>
+					</div>
 				)}
 			</div>
 
