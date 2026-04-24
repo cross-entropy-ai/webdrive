@@ -102,6 +102,9 @@ function fileIcon(name: string, isDir: boolean): string {
 
 // ── Gallery View ──────────────────────────────────────────────
 
+const ZOOM_MIN = 3;
+const ZOOM_MAX = 12;
+
 function GalleryView({
 	entries,
 	dirPath,
@@ -111,8 +114,67 @@ function GalleryView({
 	dirPath: string;
 	onNavigate: (p: string) => void;
 }) {
+	const gridRef = useRef<HTMLDivElement>(null);
+	const [cols, setCols] = useState(5);
+	const pinchRef = useRef<number | null>(null);
+	const colsAtPinchStart = useRef(5);
+
+	useEffect(() => {
+		const el = gridRef.current;
+		if (!el) return;
+
+		const onWheel = (e: WheelEvent) => {
+			if (!e.ctrlKey && !e.metaKey) return;
+			e.preventDefault();
+			setCols((c) =>
+				Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, c + (e.deltaY > 0 ? 1 : -1))),
+			);
+		};
+
+		const onTouchStart = (e: TouchEvent) => {
+			if (e.touches.length === 2) {
+				const dx = e.touches[0].clientX - e.touches[1].clientX;
+				const dy = e.touches[0].clientY - e.touches[1].clientY;
+				pinchRef.current = Math.hypot(dx, dy);
+				colsAtPinchStart.current = cols;
+			}
+		};
+
+		const onTouchMove = (e: TouchEvent) => {
+			if (e.touches.length !== 2 || pinchRef.current === null) return;
+			e.preventDefault();
+			const dx = e.touches[0].clientX - e.touches[1].clientX;
+			const dy = e.touches[0].clientY - e.touches[1].clientY;
+			const dist = Math.hypot(dx, dy);
+			const scale = dist / pinchRef.current;
+			// Pinch out (zoom in) = fewer cols, pinch in (zoom out) = more cols
+			const newCols = Math.round(colsAtPinchStart.current / scale);
+			setCols(Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, newCols)));
+		};
+
+		const onTouchEnd = () => {
+			pinchRef.current = null;
+		};
+
+		el.addEventListener("wheel", onWheel, { passive: false });
+		el.addEventListener("touchstart", onTouchStart, { passive: true });
+		el.addEventListener("touchmove", onTouchMove, { passive: false });
+		el.addEventListener("touchend", onTouchEnd);
+
+		return () => {
+			el.removeEventListener("wheel", onWheel);
+			el.removeEventListener("touchstart", onTouchStart);
+			el.removeEventListener("touchmove", onTouchMove);
+			el.removeEventListener("touchend", onTouchEnd);
+		};
+	}, [cols]);
+
 	return (
-		<div className="gallery-grid">
+		<div
+			ref={gridRef}
+			className="gallery-grid"
+			style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
+		>
 			{entries.map((entry) => {
 				const fullPath = joinPath(dirPath, entry.name);
 				const media = entry.is_dir ? null : mediaTypeFromName(entry.name);

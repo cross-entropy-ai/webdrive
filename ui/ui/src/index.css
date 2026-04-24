@@ -525,9 +525,9 @@ body {
 
 .gallery-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
 	gap: 2px;
-	padding: 0.25rem;
+	padding: 2px;
+	transition: grid-template-columns 0.15s;
 }
 /* Base item — used for non-media files */
 .gallery-item {
