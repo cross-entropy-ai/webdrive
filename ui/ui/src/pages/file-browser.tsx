@@ -106,6 +106,126 @@ function fileIcon(name: string, isDir: boolean): string {
 const ZOOM_MIN = 1;
 const ZOOM_MAX = 12;
 
+// ── Carousel Lightbox ─────────────────────────────────────────
+
+function Carousel({
+	items,
+	startIndex,
+	onClose,
+	onOpen,
+}: {
+	items: { name: string; path: string; type: "image" | "video" }[];
+	startIndex: number;
+	onClose: () => void;
+	onOpen: (path: string) => void;
+}) {
+	const [index, setIndex] = useState(startIndex);
+	const touchStartX = useRef(0);
+
+	const item = items[index];
+	const hasPrev = index > 0;
+	const hasNext = index < items.length - 1;
+
+	const prev = () => hasPrev && setIndex(index - 1);
+	const next = () => hasNext && setIndex(index + 1);
+
+	useEffect(() => {
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key === "Escape") onClose();
+			if (e.key === "ArrowLeft") prev();
+			if (e.key === "ArrowRight") next();
+			if (e.key === "Enter") onOpen(item.path);
+		};
+		window.addEventListener("keydown", onKey);
+		return () => window.removeEventListener("keydown", onKey);
+	}, [index, item]);
+
+	const onTouchStart = (e: React.TouchEvent) => {
+		touchStartX.current = e.touches[0].clientX;
+	};
+	const onTouchEnd = (e: React.TouchEvent) => {
+		const dx = e.changedTouches[0].clientX - touchStartX.current;
+		if (dx > 60) prev();
+		else if (dx < -60) next();
+	};
+
+	return (
+		<div
+			className="carousel-overlay"
+			onTouchStart={onTouchStart}
+			onTouchEnd={onTouchEnd}
+		>
+			<div className="carousel-backdrop" onClick={onClose} />
+
+			{/* Top bar */}
+			<div className="carousel-topbar">
+				<span className="carousel-filename">{item.name}</span>
+				<span className="text-sm text-muted">
+					{index + 1} / {items.length}
+				</span>
+				<div className="toolbar-group">
+					<button
+						type="button"
+						className="carousel-btn"
+						onClick={() => onOpen(item.path)}
+					>
+						<Icon icon="solar:maximize-linear" width={16} />
+					</button>
+					<a
+						href={`/api/fs/download?path=${encodeURIComponent(item.path)}`}
+						target="_blank"
+						rel="noreferrer"
+						className="carousel-btn"
+					>
+						<Icon icon="solar:download-square-linear" width={16} />
+					</a>
+					<button type="button" className="carousel-btn" onClick={onClose}>
+						<Icon icon="solar:close-circle-linear" width={16} />
+					</button>
+				</div>
+			</div>
+
+			{/* Content */}
+			<div className="carousel-content">
+				{item.type === "image" ? (
+					<img
+						key={item.path}
+						src={`/api/fs/preview?path=${encodeURIComponent(item.path)}`}
+						alt={item.name}
+					/>
+				) : (
+					<video
+						key={item.path}
+						src={`/api/fs/preview?path=${encodeURIComponent(item.path)}`}
+						controls
+						autoPlay
+					/>
+				)}
+			</div>
+
+			{/* Arrows */}
+			{hasPrev && (
+				<button
+					type="button"
+					className="carousel-arrow carousel-arrow-left"
+					onClick={prev}
+				>
+					<Icon icon="solar:alt-arrow-left-linear" width={24} />
+				</button>
+			)}
+			{hasNext && (
+				<button
+					type="button"
+					className="carousel-arrow carousel-arrow-right"
+					onClick={next}
+				>
+					<Icon icon="solar:alt-arrow-right-linear" width={24} />
+				</button>
+			)}
+		</div>
+	);
+}
+
 function GalleryView({
 	entries,
 	dirPath,
@@ -172,61 +292,92 @@ function GalleryView({
 		};
 	}, [cols]);
 
-	return (
-		<div
-			ref={gridRef}
-			className="gallery-grid"
-			style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
-		>
-			{entries.map((entry) => {
-				const fullPath = joinPath(dirPath, entry.name);
-				const media = entry.is_dir ? null : mediaTypeFromName(entry.name);
-				const isPreviewable = media === "image" || media === "video";
+	const [carouselIndex, setCarouselIndex] = useState<number | null>(null);
 
-				return (
-					<button
-						key={entry.name}
-						type="button"
-						className={`gallery-item${isPreviewable ? " gallery-media" : ""}`}
-						onClick={() => onNavigate(fullPath)}
-						title={entry.name}
-					>
-						{isPreviewable ? (
-							<>
-								{media === "image" ? (
-									<img
-										src={`/api/fs/preview?path=${encodeURIComponent(fullPath)}`}
-										alt={entry.name}
-										loading="lazy"
+	// Build media items list for carousel
+	const mediaItems = entries
+		.filter((e) => !e.is_dir && mediaTypeFromName(e.name) !== null)
+		.map((e) => ({
+			name: e.name,
+			path: joinPath(dirPath, e.name),
+			type: mediaTypeFromName(e.name) as "image" | "video",
+		}));
+
+	const openCarousel = (entryName: string) => {
+		const idx = mediaItems.findIndex((m) => m.name === entryName);
+		if (idx >= 0) setCarouselIndex(idx);
+	};
+
+	return (
+		<>
+			<div
+				ref={gridRef}
+				className="gallery-grid"
+				style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
+			>
+				{entries.map((entry) => {
+					const fullPath = joinPath(dirPath, entry.name);
+					const media = entry.is_dir ? null : mediaTypeFromName(entry.name);
+					const isPreviewable = media === "image" || media === "video";
+
+					return (
+						<button
+							key={entry.name}
+							type="button"
+							className={`gallery-item${isPreviewable ? " gallery-media" : ""}`}
+							onClick={() =>
+								isPreviewable ? openCarousel(entry.name) : onNavigate(fullPath)
+							}
+							title={entry.name}
+						>
+							{isPreviewable ? (
+								<>
+									{media === "image" ? (
+										<img
+											src={`/api/fs/preview?path=${encodeURIComponent(fullPath)}`}
+											alt={entry.name}
+											loading="lazy"
+										/>
+									) : (
+										<video
+											src={`/api/fs/preview?path=${encodeURIComponent(fullPath)}`}
+											muted
+											preload="metadata"
+										/>
+									)}
+									{media === "video" && (
+										<div className="gallery-play">
+											<Icon icon="solar:play-bold" width={20} />
+										</div>
+									)}
+									<div className="gallery-hover-name">{entry.name}</div>
+								</>
+							) : (
+								<>
+									<Icon
+										icon={fileIcon(entry.name, entry.is_dir)}
+										width={24}
+										className={entry.is_dir ? "text-accent" : "text-muted"}
 									/>
-								) : (
-									<video
-										src={`/api/fs/preview?path=${encodeURIComponent(fullPath)}`}
-										muted
-										preload="metadata"
-									/>
-								)}
-								{media === "video" && (
-									<div className="gallery-play">
-										<Icon icon="solar:play-bold" width={20} />
-									</div>
-								)}
-								<div className="gallery-hover-name">{entry.name}</div>
-							</>
-						) : (
-							<>
-								<Icon
-									icon={fileIcon(entry.name, entry.is_dir)}
-									width={24}
-									className={entry.is_dir ? "text-accent" : "text-muted"}
-								/>
-								<span className="gallery-file-name">{entry.name}</span>
-							</>
-						)}
-					</button>
-				);
-			})}
-		</div>
+									<span className="gallery-file-name">{entry.name}</span>
+								</>
+							)}
+						</button>
+					);
+				})}
+			</div>
+			{carouselIndex !== null && (
+				<Carousel
+					items={mediaItems}
+					startIndex={carouselIndex}
+					onClose={() => setCarouselIndex(null)}
+					onOpen={(p) => {
+						setCarouselIndex(null);
+						onNavigate(p);
+					}}
+				/>
+			)}
+		</>
 	);
 }
 
