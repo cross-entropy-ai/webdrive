@@ -61,7 +61,7 @@ export function RenameModal({
 						autoFocus
 					/>
 					{error && <div className="error-box">{error}</div>}
-					<div className="flex items-center justify-between">
+					<div className="flex items-center gap-2" style={{ justifyContent: "flex-end" }}>
 						<Button variant="ghost" type="button" onClick={onClose}>
 							Cancel
 						</Button>
