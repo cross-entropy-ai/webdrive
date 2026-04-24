@@ -27,6 +27,7 @@ function ThemeToggle() {
 
 export function Layout({ children }: { children: ReactNode }) {
 	const [hostname, setHostname] = useState<string>("");
+	const [sidebarOpen, setSidebarOpen] = useState(false);
 
 	useEffect(() => {
 		fetch("/api/info")
@@ -34,9 +35,29 @@ export function Layout({ children }: { children: ReactNode }) {
 			.then((d: { hostname: string }) => setHostname(d.hostname))
 			.catch(() => setHostname(window.location.hostname));
 	}, []);
+
+	// Close sidebar when resizing to desktop
+	useEffect(() => {
+		const onResize = () => {
+			if (window.innerWidth >= 768) setSidebarOpen(false);
+		};
+		window.addEventListener("resize", onResize);
+		return () => window.removeEventListener("resize", onResize);
+	}, []);
+
 	return (
 		<div className="layout-container">
-			<div className="layout-sidebar">
+			{/* Mobile overlay */}
+			{sidebarOpen && (
+				<div
+					className="sidebar-overlay"
+					onClick={() => setSidebarOpen(false)}
+					aria-hidden="true"
+				/>
+			)}
+
+			{/* Sidebar */}
+			<div className={`layout-sidebar${sidebarOpen ? " sidebar-open" : ""}`}>
 				<div className="layout-header">
 					<div>
 						<span className="text-sm text-accent font-semibold">webdrive</span>
@@ -47,6 +68,15 @@ export function Layout({ children }: { children: ReactNode }) {
 							v1.0.0
 						</span>
 					</div>
+					{/* Close button — mobile only */}
+					<button
+						type="button"
+						className="theme-toggle sidebar-close-btn"
+						onClick={() => setSidebarOpen(false)}
+						aria-label="Close sidebar"
+					>
+						<Icon icon="solar:close-circle-linear" width={16} />
+					</button>
 				</div>
 				<div style={{ flex: 1, overflowY: "auto", padding: "1rem 0" }}>
 					<div style={{ padding: "0 1rem", marginBottom: "0.5rem" }}>
@@ -68,9 +98,19 @@ export function Layout({ children }: { children: ReactNode }) {
 				</div>
 			</div>
 
+			{/* Main */}
 			<div className="layout-main">
 				<header className="layout-header">
 					<div className="flex items-center gap-2">
+						{/* Hamburger — mobile only */}
+						<button
+							type="button"
+							className="theme-toggle sidebar-menu-btn"
+							onClick={() => setSidebarOpen(true)}
+							aria-label="Open sidebar"
+						>
+							<Icon icon="solar:hamburger-menu-linear" width={16} />
+						</button>
 						<div className="text-xs text-muted">{hostname}</div>
 					</div>
 					<div className="flex items-center gap-4">
