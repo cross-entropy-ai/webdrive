@@ -7,9 +7,9 @@ import (
 	"os/exec"
 	"sync"
 
+	"github.com/creack/pty"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"github.com/creack/pty"
 )
 
 var upgrader = websocket.Upgrader{

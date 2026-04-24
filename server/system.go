@@ -45,13 +45,13 @@ type goRuntime struct {
 }
 
 type systemStats struct {
-	Hostname   string         `json:"hostname"`
-	Uptime     int64          `json:"uptime_seconds"`
-	CPU        cpuInfo        `json:"cpu"`
-	Memory     memInfo        `json:"memory"`
-	Disks      []diskInfo     `json:"disks"`
-	Network    []netInterface `json:"network"`
-	GoRuntime  goRuntime      `json:"go_runtime"`
+	Hostname  string         `json:"hostname"`
+	Uptime    int64          `json:"uptime_seconds"`
+	CPU       cpuInfo        `json:"cpu"`
+	Memory    memInfo        `json:"memory"`
+	Disks     []diskInfo     `json:"disks"`
+	Network   []netInterface `json:"network"`
+	GoRuntime goRuntime      `json:"go_runtime"`
 }
 
 var startTime = time.Now()

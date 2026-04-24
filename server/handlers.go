@@ -189,7 +189,7 @@ var textFileExts = map[string]bool{
 	".md": true, ".mdx": true, ".rst": true, ".txt": true, ".log": true,
 	".sql": true, ".graphql": true, ".gql": true, ".proto": true,
 	".dockerfile": true,
-	".vue": true, ".svelte": true, ".astro": true,
+	".vue":        true, ".svelte": true, ".astro": true,
 	".tf": true, ".hcl": true, ".nix": true,
 	".kt": true, ".kts": true, ".swift": true, ".ex": true, ".exs": true,
 	".hs": true, ".ml": true, ".mli": true, ".erl": true, ".hrl": true,
