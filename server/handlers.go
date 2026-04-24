@@ -195,6 +195,9 @@ var textFileExts = map[string]bool{
 	".hs": true, ".ml": true, ".mli": true, ".erl": true, ".hrl": true,
 	".r": true, ".R": true, ".jl": true, ".pl": true, ".pm": true,
 	".cmake": true, ".mk": true,
+	".mod": true, ".sum": true, ".lock": true, ".lockb": true,
+	".csv": true, ".tsv": true, ".jsonl": true, ".ndjson": true,
+	".diff": true, ".patch": true,
 }
 
 var textFileNames = map[string]bool{
