@@ -50,7 +50,10 @@ function Bar({ value }: { value: number }) {
 		<div className="usage-bar">
 			<div
 				className="usage-bar-fill"
-				style={{ width: `${Math.min(value, 100)}%`, backgroundColor: barColor(value) }}
+				style={{
+					width: `${Math.min(value, 100)}%`,
+					backgroundColor: barColor(value),
+				}}
 			/>
 		</div>
 	);
@@ -76,7 +79,15 @@ function Card({
 	);
 }
 
-function Row({ icon, label, value }: { icon?: string; label: string; value: React.ReactNode }) {
+function Row({
+	icon,
+	label,
+	value,
+}: {
+	icon?: string;
+	label: string;
+	value: React.ReactNode;
+}) {
 	return (
 		<div className="stat-row">
 			<span className="text-muted stat-row-label">
@@ -157,10 +168,10 @@ export function Dashboard() {
 			{/* ── Overview ── */}
 			<SectionLabel>Overview</SectionLabel>
 			<div className="stat-grid-3">
-				<Card icon="solar:server-square-linear" title="System">
+				<Card icon="solar:server-minimalistic-linear" title="System">
 					<div className="stat-rows">
 						<Row icon="solar:monitor-linear" label="Hostname" value={stats.hostname} />
-						<Row icon="solar:laptop-linear" label="OS / Arch" value={`${stats.cpu.os} / ${stats.cpu.arch}`} />
+						<Row icon="solar:cpu-linear" label="OS / Arch" value={`${stats.cpu.os} / ${stats.cpu.arch}`} />
 						<Row icon="solar:clock-circle-linear" label="Uptime" value={formatUptime(stats.uptime_seconds)} />
 					</div>
 				</Card>
@@ -168,25 +179,17 @@ export function Dashboard() {
 				<Card icon="solar:cpu-bolt-linear" title="CPU">
 					<div className="stat-rows">
 						<Row icon="solar:chip-linear" label="Cores" value={stats.cpu.count} />
-						<Row
-							icon="solar:graph-up-linear"
-							label="Load Avg"
-							value={`${load[0]?.toFixed(2)}  ${load[1]?.toFixed(2)}  ${load[2]?.toFixed(2)}`}
-						/>
+						<Row icon="solar:graph-up-linear" label="Load Avg" value={`${load[0]?.toFixed(2)}  ${load[1]?.toFixed(2)}  ${load[2]?.toFixed(2)}`} />
 						<Bar value={loadPct} />
-						<Row icon="solar:speedometer-linear" label="Load / Cores" value={`${loadPct.toFixed(0)}%`} />
+						<Row icon="solar:tuning-2-linear" label="Load / Cores" value={`${loadPct.toFixed(0)}%`} />
 					</div>
 				</Card>
 
-				<Card icon="solar:ram-linear" title="Memory">
+				<Card icon="solar:sd-card-linear" title="Memory">
 					<div className="stat-rows">
-						<Row
-							icon="solar:database-linear"
-							label="Used / Total"
-							value={`${formatBytes(stats.memory.used)} / ${formatBytes(stats.memory.total)}`}
-						/>
+						<Row icon="solar:pie-chart-2-linear" label="Used / Total" value={`${formatBytes(stats.memory.used)} / ${formatBytes(stats.memory.total)}`} />
 						<Bar value={memPct} />
-						<Row icon="solar:chart-linear" label="Usage" value={`${memPct.toFixed(1)}%`} />
+						<Row icon="solar:tuning-2-linear" label="Usage" value={`${memPct.toFixed(1)}%`} />
 					</div>
 				</Card>
 			</div>
@@ -197,16 +200,16 @@ export function Dashboard() {
 				{stats.disks.map((disk) => {
 					const dp = pct(disk.used, disk.total);
 					return (
-						<Card key={disk.mount} icon="solar:hard-drive-linear" title={disk.mount}>
+						<Card
+							key={disk.mount}
+							icon="solar:hard-drive-linear"
+							title={disk.mount}
+						>
 							<div className="stat-rows">
-								<Row
-									icon="solar:database-linear"
-									label="Used / Total"
-									value={`${formatBytes(disk.used)} / ${formatBytes(disk.total)}`}
-								/>
+								<Row icon="solar:pie-chart-2-linear" label="Used / Total" value={`${formatBytes(disk.used)} / ${formatBytes(disk.total)}`} />
 								<Bar value={dp} />
-								<Row icon="solar:chart-linear" label="Usage" value={`${dp.toFixed(1)}%`} />
-								<Row icon="solar:inbox-linear" label="Free" value={formatBytes(disk.free)} />
+								<Row icon="solar:tuning-2-linear" label="Usage" value={`${dp.toFixed(1)}%`} />
+								<Row icon="solar:folder-open-linear" label="Free" value={formatBytes(disk.free)} />
 							</div>
 						</Card>
 					);
@@ -223,7 +226,7 @@ export function Dashboard() {
 								{netIfaces.map((iface) => (
 									<Row
 										key={iface.name}
-										icon="solar:ethernet-linear"
+										icon="solar:plug-circle-linear"
 										label={iface.name}
 										value={iface.addrs.join(", ")}
 									/>
@@ -237,13 +240,13 @@ export function Dashboard() {
 			{/* ── Runtime ── */}
 			<SectionLabel>Runtime</SectionLabel>
 			<div className="stat-grid">
-				<Card icon="solar:code-square-linear" title="Go">
+				<Card icon="solar:programming-linear" title="Go">
 					<div className="stat-rows">
 						<Row icon="solar:tag-linear" label="Version" value={stats.go_runtime.version} />
-						<Row icon="solar:layers-linear" label="Goroutines" value={stats.go_runtime.goroutines} />
-						<Row icon="solar:refresh-linear" label="GC Cycles" value={stats.go_runtime.num_gc} />
-						<Row icon="solar:database-linear" label="Alloc" value={formatBytes(stats.memory.go_alloc)} />
-						<Row icon="solar:server-linear" label="Sys" value={formatBytes(stats.memory.go_sys)} />
+						<Row icon="solar:bolt-circle-linear" label="Goroutines" value={stats.go_runtime.goroutines} />
+						<Row icon="solar:refresh-circle-linear" label="GC Cycles" value={stats.go_runtime.num_gc} />
+						<Row icon="solar:pie-chart-2-linear" label="Alloc" value={formatBytes(stats.memory.go_alloc)} />
+						<Row icon="solar:server-square-linear" label="Sys" value={formatBytes(stats.memory.go_sys)} />
 					</div>
 				</Card>
 			</div>
