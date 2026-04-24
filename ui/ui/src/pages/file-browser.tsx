@@ -105,7 +105,7 @@ function fileIcon(name: string, isDir: boolean): string {
 // ── Gallery View ──────────────────────────────────────────────
 
 const ZOOM_MIN = 1;
-const ZOOM_MAX = 12;
+const TILE_MIN_PX = 180;
 
 // ── Carousel Lightbox ─────────────────────────────────────────
 
@@ -229,26 +229,44 @@ function GalleryView({
 	onNavigate,
 	cols,
 	onColsChange,
+	onZoomMaxChange,
 }: {
 	entries: Entry[];
 	dirPath: string;
 	onNavigate: (p: string) => void;
 	cols: number;
 	onColsChange: (c: number) => void;
+	onZoomMaxChange: (max: number) => void;
 }) {
 	const gridRef = useRef<HTMLDivElement>(null);
 	const pinchRef = useRef<number | null>(null);
 	const colsAtPinchStart = useRef(cols);
 	const colsRef = useRef(cols);
 	const onColsChangeRef = useRef(onColsChange);
+	const onZoomMaxChangeRef = useRef(onZoomMaxChange);
 	colsRef.current = cols;
 	onColsChangeRef.current = onColsChange;
+	onZoomMaxChangeRef.current = onZoomMaxChange;
+
+	const maxRef = useRef(ZOOM_MIN);
 
 	useEffect(() => {
 		const el = gridRef.current;
 		if (!el) return;
 
-		const clamp = (n: number) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, n));
+		const updateMax = () => {
+			if (!el.clientWidth) return;
+			const max = Math.max(ZOOM_MIN, Math.floor(el.clientWidth / TILE_MIN_PX));
+			if (max === maxRef.current) return;
+			maxRef.current = max;
+			onZoomMaxChangeRef.current(max);
+			if (colsRef.current > max) onColsChangeRef.current(max);
+		};
+		updateMax();
+		const ro = new ResizeObserver(updateMax);
+		ro.observe(el);
+
+		const clamp = (n: number) => Math.min(maxRef.current, Math.max(ZOOM_MIN, n));
 
 		const onWheel = (e: WheelEvent) => {
 			if (!e.ctrlKey && !e.metaKey) return;
@@ -286,6 +304,7 @@ function GalleryView({
 		el.addEventListener("touchend", onTouchEnd);
 
 		return () => {
+			ro.disconnect();
 			el.removeEventListener("wheel", onWheel);
 			el.removeEventListener("touchstart", onTouchStart);
 			el.removeEventListener("touchmove", onTouchMove);
@@ -722,6 +741,7 @@ export function FileBrowser() {
 	const [renameOpen, setRenameOpen] = useState(false);
 	const [viewMode, setViewMode] = useState<"list" | "gallery">("list");
 	const [galleryCols, setGalleryCols] = useState(5);
+	const [zoomMax, setZoomMax] = useState(8);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -869,10 +889,10 @@ export function FileBrowser() {
 									type="range"
 									className="zoom-slider"
 									min={ZOOM_MIN}
-									max={ZOOM_MAX}
-									value={ZOOM_MAX + ZOOM_MIN - galleryCols}
+									max={zoomMax}
+									value={zoomMax + ZOOM_MIN - galleryCols}
 									onChange={(e) =>
-										setGalleryCols(ZOOM_MAX + ZOOM_MIN - Number(e.target.value))
+										setGalleryCols(zoomMax + ZOOM_MIN - Number(e.target.value))
 									}
 								/>
 							)}
@@ -896,6 +916,7 @@ export function FileBrowser() {
 									onNavigate={navigate}
 									cols={galleryCols}
 									onColsChange={setGalleryCols}
+									onZoomMaxChange={setZoomMax}
 								/>
 							)
 						) : sortedEntries.length === 0 ? (
