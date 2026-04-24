@@ -243,7 +243,7 @@ function BreadcrumbButton({
 			}),
 		];
 	})();
-	const label = path === "/" ? "/" : `/ ${parts.join(" / ")}`;
+	const label = path === "/" ? "/" : `\u200E/ ${parts.join(" / ")}`;
 
 	return (
 		<>

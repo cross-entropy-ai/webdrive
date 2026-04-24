@@ -331,7 +331,7 @@ body {
 	white-space: nowrap;
 	text-overflow: ellipsis;
 	direction: rtl;
-	unicode-bidi: plaintext;
+	text-align: left;
 }
 
 /* ── DataTable ──────────────────────────────────────────────── */
