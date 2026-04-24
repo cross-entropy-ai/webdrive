@@ -46,6 +46,7 @@
 	border-color: var(--border);
 	margin: 0;
 	padding: 0;
+	-webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -185,30 +186,38 @@ body {
 .btn-primary {
 	color: var(--accent);
 }
-.btn-primary:hover {
-	background-color: color-mix(in srgb, var(--accent) 12%, transparent);
+@media (hover: hover) {
+	.btn-primary:hover {
+		background-color: color-mix(in srgb, var(--accent) 12%, transparent);
+	}
 }
 .btn-ghost {
 	color: var(--muted);
 }
-.btn-ghost:hover {
-	color: var(--accent);
-	background-color: color-mix(in srgb, var(--accent) 8%, transparent);
+@media (hover: hover) {
+	.btn-ghost:hover {
+		color: var(--accent);
+		background-color: color-mix(in srgb, var(--accent) 8%, transparent);
+	}
 }
 .btn-danger {
 	color: var(--muted);
 }
-.btn-danger:hover {
-	color: var(--danger);
-	background-color: color-mix(in srgb, var(--danger) 8%, transparent);
+@media (hover: hover) {
+	.btn-danger:hover {
+		color: var(--danger);
+		background-color: color-mix(in srgb, var(--danger) 8%, transparent);
+	}
 }
 .btn-outline {
 	border: 1px solid var(--border);
 	color: var(--muted);
 }
-.btn-outline:hover {
-	color: var(--foreground);
-	border-color: color-mix(in srgb, var(--foreground) 25%, transparent);
+@media (hover: hover) {
+	.btn-outline:hover {
+		color: var(--foreground);
+		border-color: color-mix(in srgb, var(--foreground) 25%, transparent);
+	}
 }
 
 /* ── Inputs ─────────────────────────────────────────────────── */
@@ -276,9 +285,11 @@ body {
 	background: transparent;
 	border: none;
 }
-.icon-btn:hover {
-	color: var(--foreground);
-	background-color: color-mix(in srgb, var(--default) 60%, transparent);
+@media (hover: hover) {
+	.icon-btn:hover {
+		color: var(--foreground);
+		background-color: color-mix(in srgb, var(--default) 60%, transparent);
+	}
 }
 
 /* ── Page Shell ─────────────────────────────────────────────── */
@@ -340,9 +351,11 @@ body {
 	white-space: nowrap;
 	flex-shrink: 0;
 }
-.breadcrumb-seg:hover {
-	color: var(--foreground);
-	background-color: color-mix(in srgb, var(--default) 60%, transparent);
+@media (hover: hover) {
+	.breadcrumb-seg:hover {
+		color: var(--foreground);
+		background-color: color-mix(in srgb, var(--default) 60%, transparent);
+	}
 }
 .breadcrumb-seg.current {
 	color: var(--foreground);
@@ -412,8 +425,10 @@ body {
 	cursor: pointer;
 	transition: color 0.15s;
 }
-.datatable th.sortable:hover {
-	color: var(--accent);
+@media (hover: hover) {
+	.datatable th.sortable:hover {
+		color: var(--accent);
+	}
 }
 .th-content {
 	display: inline-flex;
@@ -430,8 +445,10 @@ body {
 .datatable tr.interactive {
 	cursor: pointer;
 }
-.datatable tr.interactive:hover {
-	background-color: color-mix(in srgb, var(--default) 50%, transparent);
+@media (hover: hover) {
+	.datatable tr.interactive:hover {
+		background-color: color-mix(in srgb, var(--default) 50%, transparent);
+	}
 }
 .datatable td {
 	padding: 0.375rem 0.75rem;
@@ -518,8 +535,10 @@ body {
 	transition: background-color 0.1s;
 	width: 100%;
 }
-.path-modal-item:hover {
-	background-color: color-mix(in srgb, var(--default) 60%, transparent);
+@media (hover: hover) {
+	.path-modal-item:hover {
+		background-color: color-mix(in srgb, var(--default) 60%, transparent);
+	}
 }
 .path-modal-item.active {
 	background-color: color-mix(in srgb, var(--default) 80%, transparent);
