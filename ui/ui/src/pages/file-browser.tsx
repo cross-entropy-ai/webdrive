@@ -900,7 +900,7 @@ export function FileBrowser() {
 										>
 											<Icon
 												icon="solar:arrow-left-linear"
-												width={16}
+												width={22}
 												className="text-muted"
 											/>
 											<div className="file-list-info">
@@ -921,15 +921,15 @@ export function FileBrowser() {
 														? "solar:folder-bold-duotone"
 														: fileIcon(entry.name, false)
 												}
-												width={16}
+												width={22}
 												className={entry.is_dir ? "text-accent" : "text-muted"}
 											/>
 											<div className="file-list-info">
 												<span className="file-list-name">{entry.name}</span>
 												<span className="file-list-meta">
-													{!entry.is_dir && formatBytes(entry.size)}
-													{!entry.is_dir && entry.mod_time && " · "}
 													{entry.mod_time && formatTime(entry.mod_time)}
+													{!entry.is_dir && entry.mod_time && " · "}
+													{!entry.is_dir && formatBytes(entry.size)}
 												</span>
 											</div>
 										</button>
