@@ -49,7 +49,7 @@ export function RenameModal({
 			<Modal.Header>Rename</Modal.Header>
 			<Modal.Body>
 				<form
-					className="flex flex-col gap-4"
+					className="flex flex-col gap-3"
 					onSubmit={(e) => {
 						e.preventDefault();
 						handleSubmit();
