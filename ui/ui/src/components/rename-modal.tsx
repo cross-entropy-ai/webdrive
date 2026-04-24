@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Modal } from "./modal";
@@ -20,7 +20,14 @@ export function RenameModal({
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
 
-	// Sync initialName when modal opens
+	// Sync name when modal opens
+	useEffect(() => {
+		if (open) {
+			setName(initialName);
+			setError(null);
+		}
+	}, [open, initialName]);
+
 	const handleSubmit = async () => {
 		setError(null);
 		setLoading(true);
