@@ -584,7 +584,7 @@ body {
 	align-items: center;
 	justify-content: center;
 	min-height: 0;
-	padding: 0 3rem;
+	padding: 0;
 }
 .carousel-content img {
 	max-width: 100%;
@@ -613,7 +613,10 @@ body {
 	color: rgba(255, 255, 255, 0.7);
 	cursor: pointer;
 	opacity: 0;
-	transition: opacity 0.2s, background-color 0.15s, color 0.15s;
+	transition:
+		opacity 0.2s,
+		background-color 0.15s,
+		color 0.15s;
 }
 .carousel-overlay:hover .carousel-arrow {
 	opacity: 1;
