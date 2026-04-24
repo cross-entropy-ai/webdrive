@@ -102,7 +102,7 @@ function fileIcon(name: string, isDir: boolean): string {
 
 // ── Gallery View ──────────────────────────────────────────────
 
-const ZOOM_MIN = 3;
+const ZOOM_MIN = 1;
 const ZOOM_MAX = 12;
 
 function GalleryView({
