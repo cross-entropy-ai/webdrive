@@ -30,6 +30,8 @@ func Run(cfg Config) error {
 	api.GET("/info", h.info)
 	api.GET("/list", h.list)
 	api.GET("/download", h.download)
+	api.POST("/rename", h.rename)
+	api.GET("/preview", h.preview)
 
 	uiFS := ui.FS()
 	r.NoRoute(spaHandler(uiFS))
