@@ -17,6 +17,7 @@ export function Terminal() {
 			fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
 			theme: getTheme(),
 			allowProposedApi: true,
+			rightClickSelectsWord: true,
 		});
 		termRef.current = term;
 
@@ -25,6 +26,12 @@ export function Terminal() {
 		term.loadAddon(new WebLinksAddon());
 
 		term.open(containerRef.current);
+
+		// Disable browser context menu on terminal
+		containerRef.current.addEventListener("contextmenu", (e) => {
+			e.preventDefault();
+		});
+
 		fitAddon.fit();
 
 		// Connect WebSocket
@@ -86,7 +93,13 @@ export function Terminal() {
 		};
 	}, []);
 
-	return <div ref={containerRef} className="terminal-container" />;
+	return (
+		<div className="terminal-page">
+			<div className="terminal-wrapper">
+				<div ref={containerRef} className="terminal-container" />
+			</div>
+		</div>
+	);
 }
 
 function getTheme() {

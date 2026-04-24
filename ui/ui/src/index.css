@@ -830,13 +830,23 @@ body {
 
 /* ── Terminal ───────────────────────────────────────────────── */
 
-.terminal-container {
+.terminal-page {
 	height: 100%;
+	padding: 0.75rem;
+}
+.terminal-wrapper {
+	height: 100%;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+}
+.terminal-container {
+	flex: 1;
 	padding: 0.5rem;
+	min-height: 0;
 }
 .terminal-container .xterm {
 	height: 100%;
-}
-.terminal-container .xterm-viewport {
-	border-radius: var(--radius);
 }
