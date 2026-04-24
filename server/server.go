@@ -3,9 +3,9 @@ package server
 import (
 	"fmt"
 	"io/fs"
-	"log"
 	"net/http"
 
+	"github.com/cross-entropy-ai/webdrive/logger"
 	"github.com/cross-entropy-ai/webdrive/ui"
 	"github.com/gin-gonic/gin"
 )
@@ -20,8 +20,10 @@ type Config struct {
 // Run starts the gin HTTP server and blocks until it exits.
 func Run(cfg Config) error {
 	gin.SetMode(gin.ReleaseMode)
+	gin.ForceConsoleColor() // Ensure colors are output even in release mode
+
 	r := gin.New()
-	r.Use(gin.Logger(), gin.Recovery())
+	r.Use(logger.Middleware(), gin.Recovery())
 
 	api := r.Group("/api")
 	h := &handler{root: cfg.Root}
@@ -32,7 +34,8 @@ func Run(cfg Config) error {
 	r.NoRoute(spaHandler(uiFS))
 
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
-	log.Printf("webdrive serving %s on http://%s", cfg.Root, addr)
+	logger.Success("Serving UI and API on http://%s", addr)
+	logger.Info("Root directory: %s", cfg.Root)
 	return r.Run(addr)
 }
 
