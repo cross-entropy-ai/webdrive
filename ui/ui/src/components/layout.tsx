@@ -40,11 +40,6 @@ export function Layout({ children }: { children: ReactNode }) {
 			<div className="layout-main">
 				<header className="chrome-bar">
 					<div className="flex items-center gap-2">
-						<Icon
-							icon="solar:folder-with-files-linear"
-							width={14}
-							className="text-muted"
-						/>
 						<span className="text-accent font-semibold">webdrive</span>
 						<span className="text-xs text-muted">{hostname}</span>
 					</div>
