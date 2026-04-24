@@ -1,14 +1,7 @@
 import { Icon } from "@iconify/react";
 import { useEffect, useState } from "react";
 import { Button } from "../components/button";
-import {
-	DataTable,
-	DataTableBody,
-	DataTableCell,
-	DataTableHead,
-	DataTableHeader,
-	DataTableRow,
-} from "../components/datatable";
+import { type DataTableColumn, DataTable } from "../components/data-table";
 import { Input } from "../components/input";
 import { PageShell } from "../components/pageshell";
 
@@ -40,11 +33,11 @@ function formatTime(iso: string): string {
 	const d = new Date(iso);
 	if (Number.isNaN(d.getTime())) return "";
 	return d.toLocaleString(undefined, {
-		year: 'numeric',
-		month: '2-digit',
-		day: '2-digit',
-		hour: '2-digit',
-		minute: '2-digit',
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
 	});
 }
 
@@ -59,8 +52,8 @@ function readPathFromHash(): string {
 }
 
 function joinPath(dir: string, name: string): string {
-	if (dir === "/" || dir === "") return "/" + name;
-	return dir.replace(/\/+$/, "") + "/" + name;
+	if (dir === "/" || dir === "") return `/${name}`;
+	return `${dir.replace(/\/+$/, "")}/${name}`;
 }
 
 function parentOf(p: string): string {
@@ -92,47 +85,99 @@ export function Dashboard() {
 				if (!r.ok) throw new Error((await r.json()).error ?? r.statusText);
 				return (await r.json()) as ListResponse;
 			})
-			.then((d) => {
-				if (!cancelled) setData(d);
-			})
-			.catch((e: unknown) => {
-				if (!cancelled) setError(e instanceof Error ? e.message : String(e));
-			})
-			.finally(() => {
-				if (!cancelled) setLoading(false);
-			});
-		return () => {
-			cancelled = true;
-		};
+			.then((d) => { if (!cancelled) setData(d); })
+			.catch((e: unknown) => { if (!cancelled) setError(e instanceof Error ? e.message : String(e)); })
+			.finally(() => { if (!cancelled) setLoading(false); });
+		return () => { cancelled = true; };
 	}, [path]);
 
 	const navigate = (p: string) => {
 		location.hash = encodeURIComponent(p);
-		setSearch(""); // clear search on navigate
+		setSearch("");
 	};
 
-	const sortedEntries = data
-		? [...data.entries]
-				.filter(e => e.name.toLowerCase().includes(search.toLowerCase()))
-				.sort((a, b) => {
-					if (a.is_dir !== b.is_dir) return a.is_dir ? -1 : 1;
-					return a.name.localeCompare(b.name);
-				})
-		: [];
+	// Build row list: optional ".." entry + sorted filtered entries
+	type Row = Entry & { _isParent?: boolean };
+
+	const rows: Row[] = [];
+	if (path !== "/" && !search) {
+		rows.push({ name: "..", is_dir: true, size: 0, mod_time: "", _isParent: true });
+	}
+	if (data) {
+		const filtered = data.entries
+			.filter((e) => e.name.toLowerCase().includes(search.toLowerCase()))
+			.sort((a, b) => {
+				if (a.is_dir !== b.is_dir) return a.is_dir ? -1 : 1;
+				return a.name.localeCompare(b.name);
+			});
+		rows.push(...filtered);
+	}
+
+	const columns: DataTableColumn<Row>[] = [
+		{
+			key: "icon",
+			label: "",
+			width: "2rem",
+			render: (row) => (
+				<Icon
+					icon={
+						row._isParent
+							? "solar:arrow-left-linear"
+							: row.is_dir
+								? "solar:folder-bold-duotone"
+								: "solar:document-text-linear"
+					}
+					width={16}
+					className={row.is_dir ? "text-accent" : "text-muted"}
+				/>
+			),
+		},
+		{
+			key: "name",
+			label: "Name",
+			render: (row) => <span className="font-medium">{row.name}</span>,
+		},
+		{
+			key: "size",
+			label: "Size",
+			render: (row) => (
+				<span className="text-muted">
+					{row._isParent || row.is_dir ? "—" : formatSize(row.size)}
+				</span>
+			),
+		},
+		{
+			key: "mod_time",
+			label: "Modified",
+			render: (row) => (
+				<span className="text-muted">
+					{row._isParent ? "—" : formatTime(row.mod_time)}
+				</span>
+			),
+		},
+	];
+
+	const handleRowClick = (row: Row) => {
+		if (row._isParent) {
+			navigate(parentOf(path));
+		} else if (row.is_dir) {
+			navigate(joinPath(path, row.name));
+		}
+	};
 
 	const Breadcrumbs = () => {
 		const parts = path.split("/").filter(Boolean);
 		let acc = "";
 		const crumbs = [{ name: "/", path: "/" }];
 		for (const p of parts) {
-			acc += "/" + p;
+			acc += `/${p}`;
 			crumbs.push({ name: p, path: acc });
 		}
 		return (
 			<div className="flex items-center gap-2 text-sm">
 				{crumbs.map((c, i) => (
 					<div key={i} className="flex items-center gap-2">
-						{i > 0 && <span style={{ color: "color-mix(in srgb, var(--muted) 50%, transparent)" }}>/</span>}
+						{i > 0 && <span className="text-muted">/</span>}
 						<button
 							type="button"
 							onClick={() => navigate(c.path)}
@@ -148,88 +193,45 @@ export function Dashboard() {
 	};
 
 	return (
-		<PageShell 
-			title="File Browser" 
-			description="Manage and navigate your remote files."
-		>
+		<PageShell title="File Browser" description="Manage and navigate your remote files.">
 			<div className="h-full flex flex-col gap-4">
 				<div className="flex items-center justify-between">
 					<Breadcrumbs />
 					<div className="search-wrapper">
-						<Input 
-							placeholder="Filter files..." 
+						<Input
+							placeholder="Filter files..."
 							value={search}
 							onChange={(e) => setSearch(e.target.value)}
 						/>
 					</div>
 				</div>
 
-				{error && (
-					<div className="error-box">
-						Error: {error}
-					</div>
-				)}
+				{error && <div className="error-box">Error: {error}</div>}
 
 				<div className="flex-1" style={{ minHeight: 0 }}>
-					<DataTable>
-						<DataTableHeader>
-							<DataTableHead style={{ width: "2rem" }}></DataTableHead>
-							<DataTableHead>Name</DataTableHead>
-							<DataTableHead>Size</DataTableHead>
-							<DataTableHead>Modified</DataTableHead>
-							<DataTableHead className="text-right">Actions</DataTableHead>
-						</DataTableHeader>
-						<DataTableBody isEmpty={sortedEntries.length === 0 && !loading && path === "/"}>
-							{loading && !data && "Loading directory contents..."}
-							{!loading && data && sortedEntries.length === 0 && "No files found."}
-
-							{path !== "/" && !search && (
-								<DataTableRow onClick={() => navigate(parentOf(path))}>
-									<DataTableCell>
-										<Icon icon="solar:menu-dots-square-linear" width={16} className="text-muted" />
-									</DataTableCell>
-									<DataTableCell className="font-medium">..</DataTableCell>
-									<DataTableCell className="text-muted">-</DataTableCell>
-									<DataTableCell className="text-muted">-</DataTableCell>
-									<DataTableCell />
-								</DataTableRow>
-							)}
-
-							{sortedEntries.map((e) => {
-								const child = joinPath(path, e.name);
-								const isDir = e.is_dir;
-								return (
-									<DataTableRow key={e.name} onClick={() => isDir ? navigate(child) : undefined}>
-										<DataTableCell>
-											<Icon 
-												icon={isDir ? "solar:folder-bold-duotone" : "solar:document-text-linear"} 
-												width={16} 
-												className={isDir ? "text-accent" : "text-muted"} 
-											/>
-										</DataTableCell>
-										<DataTableCell className="font-medium">{e.name}</DataTableCell>
-										<DataTableCell className="text-muted">{isDir ? "-" : formatSize(e.size)}</DataTableCell>
-										<DataTableCell className="text-muted">{formatTime(e.mod_time)}</DataTableCell>
-										<DataTableCell className="text-right">
-											{!isDir && (
-												<a 
-													href={`/api/download?path=${encodeURIComponent(child)}`}
-													target="_blank" 
-													rel="noreferrer"
-													onClick={(ev) => ev.stopPropagation()}
-												>
-													<Button variant="ghost">
-														<Icon icon="solar:download-square-linear" width={16} />
-														Download
-													</Button>
-												</a>
-											)}
-										</DataTableCell>
-									</DataTableRow>
-								);
-							})}
-						</DataTableBody>
-					</DataTable>
+					<DataTable<Row>
+						columns={columns}
+						data={rows}
+						keyExtractor={(row) => row._isParent ? "__parent__" : row.name}
+						isLoading={loading && !data}
+						emptyMessage="Empty directory."
+						onRowClick={handleRowClick}
+						actions={(row) =>
+							!row._isParent && !row.is_dir ? (
+								<a
+									href={`/api/download?path=${encodeURIComponent(joinPath(path, row.name))}`}
+									target="_blank"
+									rel="noreferrer"
+									onClick={(ev) => ev.stopPropagation()}
+								>
+									<Button variant="ghost">
+										<Icon icon="solar:download-square-linear" width={16} />
+										Download
+									</Button>
+								</a>
+							) : null
+						}
+					/>
 				</div>
 			</div>
 		</PageShell>
