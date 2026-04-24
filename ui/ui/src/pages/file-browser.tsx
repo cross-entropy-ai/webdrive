@@ -1,8 +1,9 @@
 import { Icon } from "@iconify/react";
 import hljs from "highlight.js";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../components/button";
+import { previewUrl, downloadUrl } from "../lib/api";
 import { formatBytes } from "../lib/format";
 import { type DataTableColumn, DataTable } from "../components/data-table";
 import { Modal } from "../components/modal";
@@ -126,19 +127,19 @@ function Carousel({
 	const hasPrev = index > 0;
 	const hasNext = index < items.length - 1;
 
-	const prev = () => hasPrev && setIndex(index - 1);
-	const next = () => hasNext && setIndex(index + 1);
+	const prev = () => setIndex((i) => Math.max(0, i - 1));
+	const next = () => setIndex((i) => Math.min(items.length - 1, i + 1));
 
 	useEffect(() => {
 		const onKey = (e: KeyboardEvent) => {
 			if (e.key === "Escape") onClose();
 			if (e.key === "ArrowLeft") prev();
 			if (e.key === "ArrowRight") next();
-			if (e.key === "Enter") onOpen(item.path);
+			if (e.key === "Enter") onOpen(items[index].path);
 		};
 		window.addEventListener("keydown", onKey);
 		return () => window.removeEventListener("keydown", onKey);
-	}, [index, item]);
+	}, [index]);
 
 	const onTouchStart = (e: React.TouchEvent) => {
 		touchStartX.current = e.touches[0].clientX;
@@ -172,7 +173,7 @@ function Carousel({
 						<Icon icon="solar:maximize-linear" width={16} />
 					</button>
 					<a
-						href={`/api/fs/download?path=${encodeURIComponent(item.path)}`}
+						href={downloadUrl(item.path)}
 						target="_blank"
 						rel="noreferrer"
 						className="carousel-btn"
@@ -188,15 +189,11 @@ function Carousel({
 			{/* Content */}
 			<div className="carousel-content">
 				{item.type === "image" ? (
-					<img
-						key={item.path}
-						src={`/api/fs/preview?path=${encodeURIComponent(item.path)}`}
-						alt={item.name}
-					/>
+					<img key={item.path} src={previewUrl(item.path)} alt={item.name} />
 				) : (
 					<video
 						key={item.path}
-						src={`/api/fs/preview?path=${encodeURIComponent(item.path)}`}
+						src={previewUrl(item.path)}
 						controls
 						autoPlay
 					/>
@@ -242,16 +239,21 @@ function GalleryView({
 	const gridRef = useRef<HTMLDivElement>(null);
 	const pinchRef = useRef<number | null>(null);
 	const colsAtPinchStart = useRef(cols);
+	const colsRef = useRef(cols);
+	const onColsChangeRef = useRef(onColsChange);
+	colsRef.current = cols;
+	onColsChangeRef.current = onColsChange;
 
 	useEffect(() => {
 		const el = gridRef.current;
 		if (!el) return;
 
+		const clamp = (n: number) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, n));
+
 		const onWheel = (e: WheelEvent) => {
 			if (!e.ctrlKey && !e.metaKey) return;
 			e.preventDefault();
-			const next = cols + (e.deltaY > 0 ? 1 : -1);
-			onColsChange(Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, next)));
+			onColsChangeRef.current(clamp(colsRef.current + (e.deltaY > 0 ? 1 : -1)));
 		};
 
 		const onTouchStart = (e: TouchEvent) => {
@@ -259,7 +261,7 @@ function GalleryView({
 				const dx = e.touches[0].clientX - e.touches[1].clientX;
 				const dy = e.touches[0].clientY - e.touches[1].clientY;
 				pinchRef.current = Math.hypot(dx, dy);
-				colsAtPinchStart.current = cols;
+				colsAtPinchStart.current = colsRef.current;
 			}
 		};
 
@@ -270,9 +272,8 @@ function GalleryView({
 			const dy = e.touches[0].clientY - e.touches[1].clientY;
 			const dist = Math.hypot(dx, dy);
 			const scale = dist / pinchRef.current;
-			// Pinch out (zoom in) = fewer cols, pinch in (zoom out) = more cols
 			const newCols = Math.round(colsAtPinchStart.current / scale);
-			onColsChange(Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, newCols)));
+			onColsChangeRef.current(clamp(newCols));
 		};
 
 		const onTouchEnd = () => {
@@ -290,18 +291,21 @@ function GalleryView({
 			el.removeEventListener("touchmove", onTouchMove);
 			el.removeEventListener("touchend", onTouchEnd);
 		};
-	}, [cols]);
+	}, []);
 
 	const [carouselIndex, setCarouselIndex] = useState<number | null>(null);
 
-	// Build media items list for carousel
-	const mediaItems = entries
-		.filter((e) => !e.is_dir && mediaTypeFromName(e.name) !== null)
-		.map((e) => ({
-			name: e.name,
-			path: joinPath(dirPath, e.name),
-			type: mediaTypeFromName(e.name) as "image" | "video",
-		}));
+	const mediaItems = useMemo(
+		() =>
+			entries
+				.filter((e) => !e.is_dir && mediaTypeFromName(e.name) !== null)
+				.map((e) => ({
+					name: e.name,
+					path: joinPath(dirPath, e.name),
+					type: mediaTypeFromName(e.name) as "image" | "video",
+				})),
+		[entries, dirPath],
+	);
 
 	const openCarousel = (entryName: string) => {
 		const idx = mediaItems.findIndex((m) => m.name === entryName);
@@ -334,13 +338,13 @@ function GalleryView({
 								<>
 									{media === "image" ? (
 										<img
-											src={`/api/fs/preview?path=${encodeURIComponent(fullPath)}`}
+											src={previewUrl(fullPath)}
 											alt={entry.name}
 											loading="lazy"
 										/>
 									) : (
 										<video
-											src={`/api/fs/preview?path=${encodeURIComponent(fullPath)}`}
+											src={previewUrl(fullPath)}
 											muted
 											preload="metadata"
 										/>
@@ -491,7 +495,7 @@ function FilePreview({ path }: { path: string }) {
 		setContent(null);
 		setBlobUrl(null);
 
-		fetch(`/api/fs/preview?path=${encodeURIComponent(path)}`)
+		fetch(previewUrl(path))
 			.then(async (r) => {
 				if (!r.ok) {
 					const body = await r.json().catch(() => ({ error: r.statusText }));
@@ -569,10 +573,7 @@ function FilePreview({ path }: { path: string }) {
 		<div className="datatable-state">
 			<span className="text-muted">
 				Cannot preview ({contentType}).{" "}
-				<a
-					href={`/api/fs/download?path=${encodeURIComponent(path)}`}
-					className="text-accent"
-				>
+				<a href={downloadUrl(path)} className="text-accent">
 					Download
 				</a>
 			</span>
@@ -766,7 +767,7 @@ export function FileBrowser() {
 			{menuOpen && (
 				<div className="popup-menu">
 					<a
-						href={`/api/fs/download?path=${encodeURIComponent(path)}`}
+						href={downloadUrl(path)}
 						target="_blank"
 						rel="noreferrer"
 						className="popup-item"
