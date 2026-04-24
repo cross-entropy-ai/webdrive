@@ -132,11 +132,12 @@ export function Dashboard() {
 			<div className="flex items-center gap-2 text-sm">
 				{crumbs.map((c, i) => (
 					<div key={i} className="flex items-center gap-2">
-						{i > 0 && <span className="text-muted/50">/</span>}
+						{i > 0 && <span style={{ color: "color-mix(in srgb, var(--muted) 50%, transparent)" }}>/</span>}
 						<button
 							type="button"
 							onClick={() => navigate(c.path)}
-							className="text-muted hover:text-accent transition-colors cursor-pointer"
+							className="text-muted cursor-pointer"
+							style={{ background: "transparent", border: "none" }}
 						>
 							{c.name}
 						</button>
@@ -152,9 +153,9 @@ export function Dashboard() {
 			description="Manage and navigate your remote files."
 		>
 			<div className="h-full flex flex-col gap-4">
-				<div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+				<div className="flex items-center justify-between">
 					<Breadcrumbs />
-					<div className="w-full sm:w-64 shrink-0">
+					<div className="search-wrapper">
 						<Input 
 							placeholder="Filter files..." 
 							value={search}
@@ -164,15 +165,15 @@ export function Dashboard() {
 				</div>
 
 				{error && (
-					<div className="p-3 text-xs text-danger border border-danger/30 rounded-sm bg-danger/5">
+					<div className="error-box">
 						Error: {error}
 					</div>
 				)}
 
-				<div className="flex-1 min-h-0">
+				<div className="flex-1" style={{ minHeight: 0 }}>
 					<DataTable>
 						<DataTableHeader>
-							<DataTableHead className="w-8"></DataTableHead>
+							<DataTableHead style={{ width: "2rem" }}></DataTableHead>
 							<DataTableHead>Name</DataTableHead>
 							<DataTableHead>Size</DataTableHead>
 							<DataTableHead>Modified</DataTableHead>
