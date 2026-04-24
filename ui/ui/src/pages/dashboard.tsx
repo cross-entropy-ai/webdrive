@@ -70,6 +70,7 @@ export function Dashboard() {
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [search, setSearch] = useState("");
+	const [pathModalOpen, setPathModalOpen] = useState(false);
 
 	useEffect(() => {
 		const onHash = () => setPath(readPathFromHash());
@@ -249,7 +250,7 @@ export function Dashboard() {
 			description="Manage and navigate your remote files."
 		>
 			<div className="h-full flex flex-col gap-4">
-				<div className="flex items-center justify-between">
+				<div className="flex items-center justify-between gap-4">
 					<Breadcrumbs />
 					<div className="search-wrapper">
 						<Input
