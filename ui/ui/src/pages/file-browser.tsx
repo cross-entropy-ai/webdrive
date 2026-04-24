@@ -583,16 +583,17 @@ function FilePreview({ path }: { path: string }) {
 
 // ── Breadcrumb ────────────────────────────────────────────────
 
-function BreadcrumbButton({
+function Breadcrumb({
 	path,
 	onNavigate,
 }: {
 	path: string;
 	onNavigate: (p: string) => void;
 }) {
-	const [open, setOpen] = useState(false);
+	const [modalOpen, setModalOpen] = useState(false);
 	const parts = path.split("/").filter(Boolean);
-	const segments = (() => {
+
+	const allSegments = (() => {
 		let acc = "";
 		return [
 			{ name: "/", path: "/" },
@@ -602,35 +603,73 @@ function BreadcrumbButton({
 			}),
 		];
 	})();
-	const label = path === "/" ? "/" : `\u200E/ ${parts.join(" / ")}`;
+
+	const showEllipsis = parts.length > 2;
+	const visible = showEllipsis ? parts.slice(-2) : parts;
+	const offset = showEllipsis ? parts.length - 2 : 0;
 
 	return (
 		<>
-			<button
-				type="button"
-				className="breadcrumb-btn"
-				onClick={() => setOpen(true)}
-			>
-				<Icon
-					icon="solar:folder-path-connect-linear"
-					width={13}
-					className="text-muted shrink-0"
-				/>
-				<span className="breadcrumb-label">{label}</span>
-			</button>
+			<nav className="breadcrumb">
+				<button
+					type="button"
+					className={`breadcrumb-seg${path === "/" ? " current" : ""}`}
+					onClick={path === "/" ? undefined : () => onNavigate("/")}
+				>
+					<Icon icon="solar:folder-path-connect-linear" width={13} />
+				</button>
 
-			<Modal open={open} onClose={() => setOpen(false)}>
+				{showEllipsis && (
+					<>
+						<span className="breadcrumb-sep">/</span>
+						<button
+							type="button"
+							className="breadcrumb-seg"
+							onClick={() => setModalOpen(true)}
+						>
+							&hellip;
+						</button>
+					</>
+				)}
+
+				{visible.flatMap((name, i) => {
+					const segPath =
+						"/" + parts.slice(0, offset + i + 1).join("/");
+					const isCurrent = i === visible.length - 1;
+					return [
+						<span key={`sep-${segPath}`} className="breadcrumb-sep">
+							/
+						</span>,
+						isCurrent ? (
+							<span key={segPath} className="breadcrumb-seg current">
+								{name}
+							</span>
+						) : (
+							<button
+								key={segPath}
+								type="button"
+								className="breadcrumb-seg"
+								onClick={() => onNavigate(segPath)}
+							>
+								{name}
+							</button>
+						),
+					];
+				})}
+			</nav>
+
+			<Modal open={modalOpen} onClose={() => setModalOpen(false)}>
 				<Modal.Header>Navigate to</Modal.Header>
 				<Modal.Body>
 					<div className="path-modal-list">
-						{segments.map((s, i) => (
+						{allSegments.map((s, i) => (
 							<button
 								key={s.path}
 								type="button"
 								className={`path-modal-item${s.path === path ? " active" : ""}`}
 								onClick={() => {
 									onNavigate(s.path);
-									setOpen(false);
+									setModalOpen(false);
 								}}
 							>
 								<span
@@ -807,7 +846,7 @@ export function FileBrowser() {
 
 	return (
 		<div className="page-shell animate-fadeUp">
-			<BreadcrumbButton path={path} onNavigate={navigate} />
+			<Breadcrumb path={path} onNavigate={navigate} />
 
 			{error && <div className="error-box">Error: {error}</div>}
 
