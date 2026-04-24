@@ -16,7 +16,7 @@
 }
 .stat-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr));
 	gap: 0.5rem;
 	margin-bottom: 0.25rem;
 }
