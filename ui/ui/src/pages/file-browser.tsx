@@ -593,55 +593,47 @@ export function FileBrowser() {
 		return () => document.removeEventListener("mousedown", onClick);
 	}, [menuOpen]);
 
-	const menuButton = (
+	const viewToggle = (
+		<Button
+			variant={viewMode === "gallery" ? "primary" : "ghost"}
+			onClick={() => setViewMode(viewMode === "list" ? "gallery" : "list")}
+		>
+			<Icon
+				icon={
+					viewMode === "list" ? "solar:gallery-linear" : "solar:list-linear"
+				}
+				width={15}
+			/>
+		</Button>
+	);
+
+	const menuButton = path !== "/" && (
 		<div className="popup-anchor" ref={menuRef}>
 			<Button variant="ghost" onClick={() => setMenuOpen(!menuOpen)}>
 				<Icon icon="solar:menu-dots-bold" width={15} />
 			</Button>
 			{menuOpen && (
 				<div className="popup-menu">
-					{path !== "/" && (
-						<>
-							<a
-								href={`/api/fs/download?path=${encodeURIComponent(path)}`}
-								target="_blank"
-								rel="noreferrer"
-								className="popup-item"
-								onClick={() => setMenuOpen(false)}
-							>
-								<Icon icon="solar:download-square-linear" width={14} />
-								Download
-							</a>
-							<button
-								type="button"
-								className="popup-item"
-								onClick={() => {
-									setRenameOpen(true);
-									setMenuOpen(false);
-								}}
-							>
-								<Icon icon="solar:pen-linear" width={14} />
-								Rename
-							</button>
-						</>
-					)}
+					<a
+						href={`/api/fs/download?path=${encodeURIComponent(path)}`}
+						target="_blank"
+						rel="noreferrer"
+						className="popup-item"
+						onClick={() => setMenuOpen(false)}
+					>
+						<Icon icon="solar:download-square-linear" width={14} />
+						Download
+					</a>
 					<button
 						type="button"
 						className="popup-item"
 						onClick={() => {
-							setViewMode(viewMode === "list" ? "gallery" : "list");
+							setRenameOpen(true);
 							setMenuOpen(false);
 						}}
 					>
-						<Icon
-							icon={
-								viewMode === "list"
-									? "solar:gallery-linear"
-									: "solar:list-linear"
-							}
-							width={14}
-						/>
-						{viewMode === "list" ? "Gallery" : "List"}
+						<Icon icon="solar:pen-linear" width={14} />
+						Rename
 					</button>
 				</div>
 			)}
@@ -659,7 +651,7 @@ export function FileBrowser() {
 						</Button>
 						<BreadcrumbButton path={path} onNavigate={navigate} />
 					</div>
-					{menuButton}
+					<div className="toolbar-group">{menuButton}</div>
 				</div>
 
 				{error && <div className="error-box">Error: {error}</div>}
@@ -780,7 +772,10 @@ export function FileBrowser() {
 					)}
 					<BreadcrumbButton path={path} onNavigate={navigate} />
 				</div>
-				{menuButton}
+				<div className="toolbar-group">
+					{viewToggle}
+					{menuButton}
+				</div>
 			</div>
 
 			{error && <div className="error-box">Error: {error}</div>}
