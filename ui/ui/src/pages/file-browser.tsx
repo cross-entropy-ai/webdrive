@@ -122,11 +122,12 @@ function GalleryView({
 					<button
 						key={entry.name}
 						type="button"
-						className="gallery-item"
+						className={`gallery-item${isPreviewable ? " gallery-media" : ""}`}
 						onClick={() => onNavigate(fullPath)}
+						title={entry.name}
 					>
 						{isPreviewable ? (
-							<div className="gallery-thumb">
+							<>
 								{media === "image" ? (
 									<img
 										src={`/api/fs/preview?path=${encodeURIComponent(fullPath)}`}
@@ -145,17 +146,18 @@ function GalleryView({
 										<Icon icon="solar:play-bold" width={20} />
 									</div>
 								)}
-							</div>
+								<div className="gallery-hover-name">{entry.name}</div>
+							</>
 						) : (
-							<div className="gallery-icon">
+							<>
 								<Icon
 									icon={fileIcon(entry.name, entry.is_dir)}
-									width={28}
+									width={24}
 									className={entry.is_dir ? "text-accent" : "text-muted"}
 								/>
-							</div>
+								<span className="gallery-file-name">{entry.name}</span>
+							</>
 						)}
-						<span className="gallery-name">{entry.name}</span>
 					</button>
 				);
 			})}
