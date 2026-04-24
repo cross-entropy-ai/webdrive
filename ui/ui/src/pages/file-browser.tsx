@@ -791,84 +791,41 @@ export function FileBrowser() {
 		</div>
 	);
 
-	// ── File view ──
-	if (isFile) {
-		return (
-			<div className="page-shell animate-fadeUp">
-				{error && <div className="error-box">Error: {error}</div>}
-
-				<div className="flex-1">
-					<div className="datatable-wrapper">
-						<div className="file-list-header">
-							<button
-								type="button"
-								className="file-list-back"
-								onClick={() => navigate(parentOf(path))}
-							>
-								<Icon
-									icon="solar:arrow-left-linear"
-									width={15}
-									className="text-muted"
-								/>
-								<span className="text-muted">{baseName(path)}</span>
-							</button>
-							<div className="toolbar-group">{menuButton}</div>
-						</div>
-						<div className="datatable-scroll">
-							<FilePreview path={path} />
-						</div>
-					</div>
-				</div>
-
-				<RenameModal
-					open={renameOpen}
-					onClose={() => setRenameOpen(false)}
-					initialName={baseName(path)}
-					onRename={handleRename}
-				/>
-			</div>
-		);
-	}
-
-	// ── Directory view ──
-	const sortedEntries = data
-		? [...data.entries].sort((a, b) => {
-				if (a.is_dir !== b.is_dir) return a.is_dir ? -1 : 1;
-				const dir = sortDir === "asc" ? 1 : -1;
-				if (sortKey === "name") return a.name.localeCompare(b.name) * dir;
-				if (sortKey === "size") return (a.size - b.size) * dir;
-				return (
-					(new Date(a.mod_time).getTime() - new Date(b.mod_time).getTime()) *
-					dir
-				);
-			})
-		: [];
+	const sortedEntries =
+		!isFile && data
+			? [...data.entries].sort((a, b) => {
+					if (a.is_dir !== b.is_dir) return a.is_dir ? -1 : 1;
+					const dir = sortDir === "asc" ? 1 : -1;
+					if (sortKey === "name") return a.name.localeCompare(b.name) * dir;
+					if (sortKey === "size") return (a.size - b.size) * dir;
+					return (
+						(new Date(a.mod_time).getTime() - new Date(b.mod_time).getTime()) *
+						dir
+					);
+				})
+			: [];
 
 	return (
 		<div className="page-shell animate-fadeUp">
+			<BreadcrumbButton path={path} onNavigate={navigate} />
+
 			{error && <div className="error-box">Error: {error}</div>}
 
 			<div className="flex-1">
-				{viewMode === "gallery" ? (
-					<div className="datatable-wrapper">
-						<div className="file-list-header">
-							{path !== "/" ? (
-								<button
-									type="button"
-									className="file-list-back"
+				<div className="datatable-wrapper">
+					<div className="file-list-header">
+						<div className="toolbar-group">
+							{path !== "/" && (
+								<Button
+									variant="ghost"
 									onClick={() => navigate(parentOf(path))}
 								>
-									<Icon
-										icon="solar:arrow-left-linear"
-										width={15}
-										className="text-muted"
-									/>
-									<span className="text-muted">..</span>
-								</button>
-							) : (
-								<span />
+									<Icon icon="solar:arrow-left-linear" width={15} />
+								</Button>
 							)}
-							<div className="toolbar-group">
+						</div>
+						<div className="toolbar-group">
+							{!isFile && viewMode === "gallery" && (
 								<input
 									type="range"
 									className="zoom-slider"
@@ -879,14 +836,19 @@ export function FileBrowser() {
 										setGalleryCols(ZOOM_MAX + ZOOM_MIN - Number(e.target.value))
 									}
 								/>
-								{viewToggle}
-								{menuButton}
-							</div>
+							)}
+							{!isFile && viewToggle}
+							{menuButton}
 						</div>
-						<div className="datatable-scroll">
-							{loading && !data ? (
-								<div className="datatable-state">loading...</div>
-							) : sortedEntries.length === 0 ? (
+					</div>
+
+					<div className="datatable-scroll">
+						{isFile ? (
+							<FilePreview path={path} />
+						) : loading && !data ? (
+							<div className="datatable-state">loading...</div>
+						) : viewMode === "gallery" ? (
+							sortedEntries.length === 0 ? (
 								<div className="datatable-state">Empty directory.</div>
 							) : (
 								<GalleryView
@@ -896,71 +858,41 @@ export function FileBrowser() {
 									cols={galleryCols}
 									onColsChange={setGalleryCols}
 								/>
-							)}
-						</div>
-					</div>
-				) : (
-					<div className="datatable-wrapper">
-						<div className="datatable-scroll">
-							{loading && !data ? (
-								<div className="datatable-state">loading...</div>
-							) : sortedEntries.length === 0 && path === "/" ? (
-								<div className="datatable-state">Empty directory.</div>
-							) : (
-								<div className="file-list">
-									<div className="file-list-header">
-										{path !== "/" ? (
-											<button
-												type="button"
-												className="file-list-back"
-												onClick={() => navigate(parentOf(path))}
-											>
-												<Icon
-													icon="solar:arrow-left-linear"
-													width={15}
-													className="text-muted"
-												/>
-												<span className="text-muted">..</span>
-											</button>
-										) : (
-											<span />
-										)}
-										<div className="toolbar-group">
-											{viewToggle}
-											{menuButton}
+							)
+						) : sortedEntries.length === 0 ? (
+							<div className="datatable-state">Empty directory.</div>
+						) : (
+							<div className="file-list">
+								{sortedEntries.map((entry) => (
+									<button
+										key={entry.name}
+										type="button"
+										className="file-list-item"
+										onClick={() => navigate(joinPath(path, entry.name))}
+									>
+										<Icon
+											icon={
+												entry.is_dir
+													? "solar:folder-bold-duotone"
+													: fileIcon(entry.name, false)
+											}
+											width={22}
+											className={entry.is_dir ? "text-accent" : "text-muted"}
+										/>
+										<div className="file-list-info">
+											<span className="file-list-name">{entry.name}</span>
+											<span className="file-list-meta">
+												{entry.mod_time && formatTime(entry.mod_time)}
+												{!entry.is_dir && entry.mod_time && " · "}
+												{!entry.is_dir && formatBytes(entry.size)}
+											</span>
 										</div>
-									</div>
-									{sortedEntries.map((entry) => (
-										<button
-											key={entry.name}
-											type="button"
-											className="file-list-item"
-											onClick={() => navigate(joinPath(path, entry.name))}
-										>
-											<Icon
-												icon={
-													entry.is_dir
-														? "solar:folder-bold-duotone"
-														: fileIcon(entry.name, false)
-												}
-												width={22}
-												className={entry.is_dir ? "text-accent" : "text-muted"}
-											/>
-											<div className="file-list-info">
-												<span className="file-list-name">{entry.name}</span>
-												<span className="file-list-meta">
-													{entry.mod_time && formatTime(entry.mod_time)}
-													{!entry.is_dir && entry.mod_time && " · "}
-													{!entry.is_dir && formatBytes(entry.size)}
-												</span>
-											</div>
-										</button>
-									))}
-								</div>
-							)}
-						</div>
+									</button>
+								))}
+							</div>
+						)}
 					</div>
-				)}
+				</div>
 			</div>
 
 			<RenameModal
