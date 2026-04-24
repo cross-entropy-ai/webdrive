@@ -60,7 +60,7 @@ export function Layout({ children }: { children: ReactNode }) {
 			<div className={`layout-sidebar${sidebarOpen ? " sidebar-open" : ""}`}>
 				<div className="layout-header">
 					<div>
-						<span className="text-sm text-accent font-semibold">webdrive</span>
+						<span className="text-accent font-semibold">webdrive</span>
 					</div>
 					{/* Close button — mobile only */}
 					<button

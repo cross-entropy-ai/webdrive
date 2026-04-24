@@ -38,7 +38,7 @@ export function Modal({ open, onClose, children }: ModalProps) {
 function Header({ children }: { children: ReactNode }) {
 	return (
 		<div className="modal-header">
-			<h2 className="text-sm text-accent">{children}</h2>
+			<h2 className="text-accent font-medium">{children}</h2>
 		</div>
 	);
 }
