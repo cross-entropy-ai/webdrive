@@ -29,7 +29,7 @@ function ThemeToggle() {
 const navItems = [
 	{ path: "/", icon: "solar:monitor-linear", label: "Dashboard" },
 	{ path: "/files", icon: "solar:folder-with-files-linear", label: "Files" },
-	{ path: "/terminal", icon: "solar:monitor-smartphone-linear", label: "Terminal" },
+	{ path: "/terminal", icon: "mdi:console", label: "Terminal" },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
