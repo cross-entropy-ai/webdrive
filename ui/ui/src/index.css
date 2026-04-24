@@ -3,7 +3,7 @@
   --foreground: #171717;
   --sidebar: #f7f7f7;
   --surface: #f5f5f5;
-  --accent: #6366f1;
+  --accent: #171717;
   --accent-foreground: #ffffff;
   --default: #f0f0f0;
   --default-foreground: #171717;
@@ -22,7 +22,7 @@
   --foreground: #ededed;
   --sidebar: #050505;
   --surface: #171717;
-  --accent: #818cf8;
+  --accent: #ededed;
   --accent-foreground: #0a0a0a;
   --default: #1a1a1a;
   --default-foreground: #ededed;
