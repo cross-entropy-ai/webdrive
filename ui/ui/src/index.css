@@ -146,8 +146,9 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
   background-color: var(--background);
-  overflow: auto;
+  overflow: hidden;
 }
 .layout-header {
   height: 2.5rem;

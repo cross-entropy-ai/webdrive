@@ -60,7 +60,7 @@ export function Layout({ children }: { children: ReactNode }) {
 						<ThemeToggle />
 					</div>
 				</header>
-				<main style={{ flex: 1 }}>
+				<main style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
 					{children}
 				</main>
 			</div>
