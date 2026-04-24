@@ -544,6 +544,11 @@ body {
 	gap: 1rem;
 	padding: 0.5rem 0.75rem;
 	color: #fff;
+	opacity: 0;
+	transition: opacity 0.2s;
+}
+.carousel-overlay:hover .carousel-topbar {
+	opacity: 1;
 }
 .carousel-filename {
 	flex: 1;
@@ -607,9 +612,11 @@ body {
 	border-radius: 50%;
 	color: rgba(255, 255, 255, 0.7);
 	cursor: pointer;
-	transition:
-		background-color 0.15s,
-		color 0.15s;
+	opacity: 0;
+	transition: opacity 0.2s, background-color 0.15s, color 0.15s;
+}
+.carousel-overlay:hover .carousel-arrow {
+	opacity: 1;
 }
 .carousel-arrow:hover {
 	background: rgba(255, 255, 255, 0.2);
