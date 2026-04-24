@@ -60,6 +60,7 @@ build-ui: deps
 	@rm -rf $(DIST_DIR)
 	@mkdir -p $(DIST_DIR)
 	@touch $(DIST_DIR)/.gitkeep
+	@cd $(UI_DIR) && bunx @tailwindcss/cli -i ./src/index.css -o ./src/tailwind.css --minify
 	@cd $(UI_DIR) && bun build ./src/index.html \
 	  --outdir=dist \
 	  --target=browser \

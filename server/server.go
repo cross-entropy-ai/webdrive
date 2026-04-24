@@ -27,6 +27,7 @@ func Run(cfg Config) error {
 
 	api := r.Group("/api")
 	h := &handler{root: cfg.Root}
+	api.GET("/info", h.info)
 	api.GET("/list", h.list)
 	api.GET("/download", h.download)
 

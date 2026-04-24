@@ -23,6 +23,14 @@ function ThemeToggle() {
 }
 
 export function Layout({ children }: { children: ReactNode }) {
+	const [hostname, setHostname] = useState<string>("");
+
+	useEffect(() => {
+		fetch("/api/info")
+			.then((r) => r.json())
+			.then((d: { hostname: string }) => setHostname(d.hostname))
+			.catch(() => setHostname(window.location.hostname));
+	}, []);
 	return (
 		<div className="layout-container">
 			<div className="layout-sidebar">
@@ -46,7 +54,7 @@ export function Layout({ children }: { children: ReactNode }) {
 			<div className="layout-main">
 				<header className="layout-header">
 					<div className="flex items-center gap-2">
-						<div className="text-xs text-muted">{window.location.hostname}</div>
+						<div className="text-xs text-muted">{hostname}</div>
 					</div>
 					<div className="flex items-center gap-4">
 						<ThemeToggle />

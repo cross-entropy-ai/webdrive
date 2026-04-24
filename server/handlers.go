@@ -15,6 +15,14 @@ type handler struct {
 	root string
 }
 
+func (h *handler) info(c *gin.Context) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = "unknown"
+	}
+	c.JSON(http.StatusOK, gin.H{"hostname": hostname})
+}
+
 type entry struct {
 	Name    string    `json:"name"`
 	IsDir   bool      `json:"is_dir"`
