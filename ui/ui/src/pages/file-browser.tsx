@@ -109,15 +109,18 @@ function GalleryView({
 	entries,
 	dirPath,
 	onNavigate,
+	cols,
+	onColsChange,
 }: {
 	entries: Entry[];
 	dirPath: string;
 	onNavigate: (p: string) => void;
+	cols: number;
+	onColsChange: (c: number) => void;
 }) {
 	const gridRef = useRef<HTMLDivElement>(null);
-	const [cols, setCols] = useState(5);
 	const pinchRef = useRef<number | null>(null);
-	const colsAtPinchStart = useRef(5);
+	const colsAtPinchStart = useRef(cols);
 
 	useEffect(() => {
 		const el = gridRef.current;
@@ -126,9 +129,8 @@ function GalleryView({
 		const onWheel = (e: WheelEvent) => {
 			if (!e.ctrlKey && !e.metaKey) return;
 			e.preventDefault();
-			setCols((c) =>
-				Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, c + (e.deltaY > 0 ? 1 : -1))),
-			);
+			const next = cols + (e.deltaY > 0 ? 1 : -1);
+			onColsChange(Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, next)));
 		};
 
 		const onTouchStart = (e: TouchEvent) => {
@@ -149,7 +151,7 @@ function GalleryView({
 			const scale = dist / pinchRef.current;
 			// Pinch out (zoom in) = fewer cols, pinch in (zoom out) = more cols
 			const newCols = Math.round(colsAtPinchStart.current / scale);
-			setCols(Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, newCols)));
+			onColsChange(Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, newCols)));
 		};
 
 		const onTouchEnd = () => {
@@ -521,6 +523,7 @@ export function FileBrowser() {
 
 	const [renameOpen, setRenameOpen] = useState(false);
 	const [viewMode, setViewMode] = useState<"list" | "gallery">("list");
+	const [galleryCols, setGalleryCols] = useState(5);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -718,6 +721,18 @@ export function FileBrowser() {
 				</div>
 				<div className="toolbar-group">
 					{path !== "/" && actions}
+					{viewMode === "gallery" && (
+						<input
+							type="range"
+							className="zoom-slider"
+							min={ZOOM_MIN}
+							max={ZOOM_MAX}
+							value={ZOOM_MAX + ZOOM_MIN - galleryCols}
+							onChange={(e) =>
+								setGalleryCols(ZOOM_MAX + ZOOM_MIN - Number(e.target.value))
+							}
+						/>
+					)}
 					<Button
 						variant={viewMode === "gallery" ? "primary" : "ghost"}
 						onClick={() =>
@@ -751,6 +766,8 @@ export function FileBrowser() {
 									entries={sortedEntries}
 									dirPath={path}
 									onNavigate={navigate}
+									cols={galleryCols}
+									onColsChange={setGalleryCols}
 								/>
 							)}
 						</div>
