@@ -1,5 +1,6 @@
 import { Icon } from "@iconify/react";
-import { useEffect, useState } from "react";
+import hljs from "highlight.js";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "../components/button";
 import { type DataTableColumn, DataTable } from "../components/data-table";
 import { Modal } from "../components/modal";
@@ -87,6 +88,54 @@ function mimeCategory(
 	return "binary";
 }
 
+// ── Code Preview with syntax highlighting ─────────────────────
+
+function langFromFilename(name: string): string | undefined {
+	const ext = name.split(".").pop()?.toLowerCase();
+	if (!ext) return undefined;
+	const map: Record<string, string> = {
+		ts: "typescript", tsx: "typescript", js: "javascript", jsx: "javascript",
+		py: "python", rb: "ruby", rs: "rust", go: "go", java: "java",
+		c: "c", h: "c", cpp: "cpp", hpp: "cpp", cs: "csharp",
+		sh: "bash", bash: "bash", zsh: "bash", fish: "bash",
+		json: "json", yaml: "yaml", yml: "yaml", toml: "ini",
+		xml: "xml", html: "xml", htm: "xml", svg: "xml",
+		css: "css", scss: "scss", less: "less",
+		sql: "sql", md: "markdown", dockerfile: "dockerfile",
+		makefile: "makefile", lua: "lua", php: "php", swift: "swift",
+		kt: "kotlin", r: "r", pl: "perl", ex: "elixir", erl: "erlang",
+		hs: "haskell", ml: "ocaml", vim: "vim", tf: "hcl",
+		proto: "protobuf", graphql: "graphql", gql: "graphql",
+	};
+	return map[ext];
+}
+
+function CodePreview({ content, filename }: { content: string; filename: string }) {
+	const codeRef = useRef<HTMLElement>(null);
+
+	useEffect(() => {
+		if (!codeRef.current) return;
+		const lang = langFromFilename(filename);
+		if (lang) {
+			try {
+				const result = hljs.highlight(content, { language: lang });
+				codeRef.current.innerHTML = result.value;
+			} catch {
+				codeRef.current.textContent = content;
+			}
+		} else {
+			const result = hljs.highlightAuto(content);
+			codeRef.current.innerHTML = result.value;
+		}
+	}, [content, filename]);
+
+	return (
+		<div className="preview-text">
+			<pre><code ref={codeRef} className="hljs">{content}</code></pre>
+		</div>
+	);
+}
+
 // ── File Preview ──────────────────────────────────────────────
 
 function FilePreview({ path }: { path: string }) {
@@ -146,11 +195,7 @@ function FilePreview({ path }: { path: string }) {
 	const cat = mimeCategory(contentType);
 
 	if (cat === "text" && content !== null) {
-		return (
-			<div className="preview-text">
-				<pre><code>{content}</code></pre>
-			</div>
-		);
+		return <CodePreview content={content} filename={baseName(path)} />;
 	}
 	if (cat === "image" && blobUrl) {
 		return <div className="preview-media"><img src={blobUrl} alt={baseName(path)} /></div>;

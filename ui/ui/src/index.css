@@ -519,6 +519,50 @@ body {
 	word-break: break-all;
 	tab-size: 4;
 }
+.preview-text .hljs { color: var(--foreground); }
+
+/* Syntax highlight — light mode */
+:root {
+	--hl-keyword: #a626a4;
+	--hl-string: #50a14f;
+	--hl-number: #986801;
+	--hl-comment: #a0a1a7;
+	--hl-function: #4078f2;
+	--hl-type: #c18401;
+	--hl-tag: #e45649;
+	--hl-attr: #986801;
+	--hl-builtin: #0184bc;
+	--hl-operator: #383a42;
+	--hl-punctuation: #383a42;
+}
+.dark {
+	--hl-keyword: #c678dd;
+	--hl-string: #98c379;
+	--hl-number: #d19a66;
+	--hl-comment: #5c6370;
+	--hl-function: #61afef;
+	--hl-type: #e5c07b;
+	--hl-tag: #e06c75;
+	--hl-attr: #d19a66;
+	--hl-builtin: #56b6c2;
+	--hl-operator: #abb2bf;
+	--hl-punctuation: #abb2bf;
+}
+.hljs-keyword, .hljs-selector-tag, .hljs-built_in { color: var(--hl-keyword); }
+.hljs-string, .hljs-regexp { color: var(--hl-string); }
+.hljs-number, .hljs-literal { color: var(--hl-number); }
+.hljs-comment, .hljs-doctag { color: var(--hl-comment); font-style: italic; }
+.hljs-title, .hljs-title\.function_ { color: var(--hl-function); }
+.hljs-type, .hljs-title\.class_ { color: var(--hl-type); }
+.hljs-tag { color: var(--hl-tag); }
+.hljs-attr, .hljs-attribute { color: var(--hl-attr); }
+.hljs-built_in { color: var(--hl-builtin); }
+.hljs-operator { color: var(--hl-operator); }
+.hljs-punctuation { color: var(--hl-punctuation); }
+.hljs-meta { color: var(--hl-comment); }
+.hljs-variable, .hljs-template-variable { color: var(--hl-tag); }
+.hljs-symbol { color: var(--hl-number); }
+.hljs-params { color: var(--foreground); }
 .preview-media {
 	height: 100%;
 	display: flex;
