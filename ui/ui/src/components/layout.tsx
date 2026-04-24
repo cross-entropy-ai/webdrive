@@ -31,7 +31,10 @@ export function Layout({ children }: { children: ReactNode }) {
 	useEffect(() => {
 		fetch("/api/info")
 			.then((r) => r.json())
-			.then((d: { hostname: string }) => setHostname(d.hostname))
+			.then((d: { hostname: string }) => {
+				setHostname(d.hostname);
+				document.title = `Webdrive (${d.hostname})`;
+			})
 			.catch(() => setHostname(window.location.hostname));
 	}, []);
 
@@ -40,7 +43,7 @@ export function Layout({ children }: { children: ReactNode }) {
 			<div className="layout-main">
 				<header className="chrome-bar">
 					<div className="flex items-center gap-2">
-						<span className="text-accent font-semibold">webdrive</span>
+						<span className="text-accent font-semibold">Webdrive</span>
 						<span className="text-xs text-muted">{hostname}</span>
 					</div>
 					<ThemeToggle />
