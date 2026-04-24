@@ -8,6 +8,7 @@ import { formatBytes } from "../lib/format";
 import { type DataTableColumn, DataTable } from "../components/data-table";
 import { Modal } from "../components/modal";
 import { RenameModal } from "../components/rename-modal";
+import "./file-browser.css";
 
 type Entry = {
 	name: string;

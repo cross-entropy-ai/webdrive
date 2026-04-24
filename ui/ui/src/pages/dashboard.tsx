@@ -1,6 +1,7 @@
 import { Icon } from "@iconify/react";
 import { useEffect, useState } from "react";
 import { formatBytes } from "../lib/format";
+import "./dashboard.css";
 
 type SystemStats = {
 	hostname: string;
