@@ -68,6 +68,101 @@ function mimeCategory(
 	return "binary";
 }
 
+function mediaTypeFromName(name: string): "image" | "video" | "audio" | null {
+	const ext = name.split(".").pop()?.toLowerCase();
+	if (!ext) return null;
+	const imageExts = new Set([
+		"jpg",
+		"jpeg",
+		"png",
+		"gif",
+		"webp",
+		"svg",
+		"bmp",
+		"ico",
+		"avif",
+		"heic",
+	]);
+	const videoExts = new Set(["mp4", "webm", "mov", "avi", "mkv", "m4v"]);
+	const audioExts = new Set(["mp3", "wav", "ogg", "flac", "aac", "m4a"]);
+	if (imageExts.has(ext)) return "image";
+	if (videoExts.has(ext)) return "video";
+	if (audioExts.has(ext)) return "audio";
+	return null;
+}
+
+function fileIcon(name: string, isDir: boolean): string {
+	if (isDir) return "solar:folder-bold-duotone";
+	const media = mediaTypeFromName(name);
+	if (media === "image") return "solar:gallery-linear";
+	if (media === "video") return "solar:videocamera-linear";
+	if (media === "audio") return "solar:music-note-linear";
+	return "solar:document-text-linear";
+}
+
+// ── Gallery View ──────────────────────────────────────────────
+
+function GalleryView({
+	entries,
+	dirPath,
+	onNavigate,
+}: {
+	entries: Entry[];
+	dirPath: string;
+	onNavigate: (p: string) => void;
+}) {
+	return (
+		<div className="gallery-grid">
+			{entries.map((entry) => {
+				const fullPath = joinPath(dirPath, entry.name);
+				const media = entry.is_dir ? null : mediaTypeFromName(entry.name);
+				const isPreviewable = media === "image" || media === "video";
+
+				return (
+					<button
+						key={entry.name}
+						type="button"
+						className="gallery-item"
+						onClick={() => onNavigate(fullPath)}
+					>
+						{isPreviewable ? (
+							<div className="gallery-thumb">
+								{media === "image" ? (
+									<img
+										src={`/api/fs/preview?path=${encodeURIComponent(fullPath)}`}
+										alt={entry.name}
+										loading="lazy"
+									/>
+								) : (
+									<video
+										src={`/api/fs/preview?path=${encodeURIComponent(fullPath)}`}
+										muted
+										preload="metadata"
+									/>
+								)}
+								{media === "video" && (
+									<div className="gallery-play">
+										<Icon icon="solar:play-bold" width={20} />
+									</div>
+								)}
+							</div>
+						) : (
+							<div className="gallery-icon">
+								<Icon
+									icon={fileIcon(entry.name, entry.is_dir)}
+									width={28}
+									className={entry.is_dir ? "text-accent" : "text-muted"}
+								/>
+							</div>
+						)}
+						<span className="gallery-name">{entry.name}</span>
+					</button>
+				);
+			})}
+		</div>
+	);
+}
+
 // ── Code Preview with syntax highlighting ─────────────────────
 
 function langFromFilename(name: string): string | undefined {
@@ -361,6 +456,7 @@ export function FileBrowser() {
 	const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
 	const [renameOpen, setRenameOpen] = useState(false);
+	const [viewMode, setViewMode] = useState<"list" | "gallery">("list");
 
 	useEffect(() => {
 		let cancelled = false;
@@ -556,23 +652,58 @@ export function FileBrowser() {
 					)}
 					<BreadcrumbButton path={path} onNavigate={navigate} />
 				</div>
-				{path !== "/" && actions}
+				<div className="toolbar-group">
+					{path !== "/" && actions}
+					<Button
+						variant={viewMode === "gallery" ? "primary" : "ghost"}
+						onClick={() =>
+							setViewMode(viewMode === "list" ? "gallery" : "list")
+						}
+					>
+						<Icon
+							icon={
+								viewMode === "list"
+									? "solar:gallery-linear"
+									: "solar:list-linear"
+							}
+							width={15}
+						/>
+					</Button>
+				</div>
 			</div>
 
 			{error && <div className="error-box">Error: {error}</div>}
 
 			<div className="flex-1">
-				<DataTable<Row>
-					columns={columns}
-					data={rows}
-					keyExtractor={(row) => (row._isParent ? "__parent__" : row.name)}
-					isLoading={loading && !data}
-					emptyMessage="Empty directory."
-					onRowClick={(row) => {
-						if (row._isParent) navigate(parentOf(path));
-						else navigate(joinPath(path, row.name));
-					}}
-				/>
+				{viewMode === "gallery" ? (
+					<div className="datatable-wrapper">
+						<div className="datatable-scroll">
+							{loading && !data ? (
+								<div className="datatable-state">loading...</div>
+							) : sortedEntries.length === 0 ? (
+								<div className="datatable-state">Empty directory.</div>
+							) : (
+								<GalleryView
+									entries={sortedEntries}
+									dirPath={path}
+									onNavigate={navigate}
+								/>
+							)}
+						</div>
+					</div>
+				) : (
+					<DataTable<Row>
+						columns={columns}
+						data={rows}
+						keyExtractor={(row) => (row._isParent ? "__parent__" : row.name)}
+						isLoading={loading && !data}
+						emptyMessage="Empty directory."
+						onRowClick={(row) => {
+							if (row._isParent) navigate(parentOf(path));
+							else navigate(joinPath(path, row.name));
+						}}
+					/>
+				)}
 			</div>
 
 			<RenameModal
