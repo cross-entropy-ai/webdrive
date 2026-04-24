@@ -1,0 +1,16 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/webdrive ./cmd/webdrive"
+  bin = "./tmp/webdrive"
+  args_bin = ["."]
+  include_ext = ["go"]
+  exclude_dir = ["tmp", "ui", "node_modules"]
+  delay = 500
+
+[log]
+  time = false
+
+[misc]
+  clean_on_exit = true

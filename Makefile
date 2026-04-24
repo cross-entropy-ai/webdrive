@@ -13,7 +13,7 @@ NC     := \033[0m
 step    = printf "$(CYAN)➜ %s$(NC)\n" $(1)
 success = printf "$(GREEN)✓ %s$(NC)\n" $(1)
 
-.PHONY: all help deps fmt build build-ui build-server clean
+.PHONY: all help deps fmt build build-ui build-server dev clean
 
 all: help
 
@@ -72,6 +72,15 @@ build-server:
 	@$(call step, "Compiling Go backend...")
 	@go build -o $(BIN) $(CMD)
 	@$(call success, "Backend compiled")
+
+## dev: run backend (air auto-rebuild) + UI dev server concurrently
+dev: deps
+	@rm -rf $(DIST_DIR) && mkdir -p $(DIST_DIR) && touch $(DIST_DIR)/.gitkeep
+	@$(call step, "Starting dev servers (Go + UI)...")
+	@trap 'kill 0' EXIT; \
+	  (cd $(UI_DIR) && bun run dev) & \
+	  air & \
+	  wait
 
 ## clean: remove build artifacts (keeps dist/.gitkeep so \`go build\` still works)
 clean:
