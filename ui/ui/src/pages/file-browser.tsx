@@ -539,6 +539,7 @@ export function FileBrowser() {
 		setLoading(true);
 		setError(null);
 		setIsFile(false);
+		setData(null);
 		fetch(`/api/fs/list?path=${encodeURIComponent(path)}`)
 			.then(async (r) => {
 				if (!r.ok) {
