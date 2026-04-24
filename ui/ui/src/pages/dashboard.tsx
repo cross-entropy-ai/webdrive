@@ -175,14 +175,12 @@ export function Dashboard() {
 
 		return (
 			<div className="flex items-center gap-2 text-sm">
-				<button
-					type="button"
+				<span
 					onClick={() => navigate("/")}
 					className="text-muted cursor-pointer"
-					style={{ background: "transparent", border: "none" }}
 				>
 					/
-				</button>
+				</span>
 				{segments.map((c, i) => (
 					<div key={c.path} className="flex items-center gap-2">
 						{i > 0 && <span className="text-muted">/</span>}
