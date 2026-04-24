@@ -128,6 +128,9 @@ function getTheme() {
 				brightMagenta: "#d670d6",
 				brightCyan: "#29b8db",
 				brightWhite: "#ffffff",
+				scrollbarSliderBackground: "#ffffff20",
+				scrollbarSliderHoverBackground: "#ffffff40",
+				scrollbarSliderActiveBackground: "#ffffff50",
 			}
 		: {
 				background: "#ffffff",
@@ -152,5 +155,8 @@ function getTheme() {
 				brightMagenta: "#a626a4",
 				brightCyan: "#0b7285",
 				brightWhite: "#ffffff",
+				scrollbarSliderBackground: "#00000015",
+				scrollbarSliderHoverBackground: "#00000030",
+				scrollbarSliderActiveBackground: "#00000040",
 			};
 }
