@@ -789,11 +789,13 @@ body {
 }
 .stat-card-body {
 	padding: 0.5rem 0.75rem;
+	overflow-x: auto;
 }
 .stat-rows {
 	display: flex;
 	flex-direction: column;
 	gap: 0.25rem;
+	min-width: max-content;
 }
 .stat-row {
 	display: flex;
