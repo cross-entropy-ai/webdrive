@@ -266,7 +266,8 @@ function GalleryView({
 		const ro = new ResizeObserver(updateMax);
 		ro.observe(el);
 
-		const clamp = (n: number) => Math.min(maxRef.current, Math.max(ZOOM_MIN, n));
+		const clamp = (n: number) =>
+			Math.min(maxRef.current, Math.max(ZOOM_MIN, n));
 
 		const onWheel = (e: WheelEvent) => {
 			if (!e.ctrlKey && !e.metaKey) return;
@@ -652,8 +653,7 @@ function Breadcrumb({
 				)}
 
 				{visible.flatMap((name, i) => {
-					const segPath =
-						"/" + parts.slice(0, offset + i + 1).join("/");
+					const segPath = "/" + parts.slice(0, offset + i + 1).join("/");
 					const isCurrent = i === visible.length - 1;
 					return [
 						<span key={`sep-${segPath}`} className="breadcrumb-sep">
@@ -807,9 +807,7 @@ export function FileBrowser() {
 			onClick={() => setViewMode(viewMode === "list" ? "gallery" : "list")}
 		>
 			<Icon
-				icon={
-					viewMode === "list" ? "solar:widget-linear" : "solar:list-linear"
-				}
+				icon={viewMode === "list" ? "solar:widget-linear" : "solar:list-linear"}
 				width={15}
 			/>
 		</Button>
