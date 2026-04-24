@@ -39,21 +39,24 @@ function pct(used: number, total: number): number {
 	return (used / total) * 100;
 }
 
-function Bar({ value, color }: { value: number; color?: string }) {
+function barColor(v: number): string {
+	if (v > 90) return "var(--danger)";
+	if (v > 70) return "var(--warning)";
+	return "var(--accent)";
+}
+
+function Bar({ value }: { value: number }) {
 	return (
 		<div className="usage-bar">
 			<div
 				className="usage-bar-fill"
-				style={{
-					width: `${Math.min(value, 100)}%`,
-					backgroundColor: color ?? (value > 90 ? "var(--danger)" : value > 70 ? "var(--warning)" : "var(--accent)"),
-				}}
+				style={{ width: `${Math.min(value, 100)}%`, backgroundColor: barColor(value) }}
 			/>
 		</div>
 	);
 }
 
-function Section({
+function Card({
 	icon,
 	title,
 	children,
@@ -80,6 +83,18 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 			<span className="font-medium">{value}</span>
 		</div>
 	);
+}
+
+function SectionLabel({ children }: { children: string }) {
+	return <div className="dash-section-label">{children}</div>;
+}
+
+// Filter to useful addresses: IPv4 and non-link-local IPv6
+function filterAddrs(addrs: string[]): string[] {
+	return addrs.filter((a) => {
+		if (a.startsWith("fe80:")) return false;
+		return true;
+	});
 }
 
 export function Dashboard() {
@@ -127,41 +142,39 @@ export function Dashboard() {
 
 	const memPct = pct(stats.memory.used, stats.memory.total);
 	const load = stats.cpu.load_average;
+	const loadPct = stats.cpu.count > 0 ? (load[0] / stats.cpu.count) * 100 : 0;
+
+	// Filter network interfaces to those with useful addresses
+	const netIfaces = stats.network
+		.map((iface) => ({ ...iface, addrs: filterAddrs(iface.addrs) }))
+		.filter((iface) => iface.addrs.length > 0);
 
 	return (
-		<div className="page-shell animate-fadeUp">
-			<div className="stat-grid">
-				{/* System */}
-				<Section icon="solar:server-square-linear" title="System">
+		<div className="page-shell animate-fadeUp dash-layout">
+			{/* ── Overview ── */}
+			<SectionLabel>Overview</SectionLabel>
+			<div className="stat-grid-3">
+				<Card icon="solar:server-square-linear" title="System">
 					<div className="stat-rows">
 						<Row label="Hostname" value={stats.hostname} />
 						<Row label="OS / Arch" value={`${stats.cpu.os} / ${stats.cpu.arch}`} />
 						<Row label="Uptime" value={formatUptime(stats.uptime_seconds)} />
 					</div>
-				</Section>
+				</Card>
 
-				{/* CPU */}
-				<Section icon="solar:cpu-bolt-linear" title="CPU">
+				<Card icon="solar:cpu-bolt-linear" title="CPU">
 					<div className="stat-rows">
 						<Row label="Cores" value={stats.cpu.count} />
 						<Row
 							label="Load Avg"
 							value={`${load[0]?.toFixed(2)}  ${load[1]?.toFixed(2)}  ${load[2]?.toFixed(2)}`}
 						/>
-						{load[0] !== undefined && (
-							<>
-								<Bar value={(load[0] / stats.cpu.count) * 100} />
-								<Row
-									label="Load / Cores"
-									value={`${((load[0] / stats.cpu.count) * 100).toFixed(0)}%`}
-								/>
-							</>
-						)}
+						<Bar value={loadPct} />
+						<Row label="Load / Cores" value={`${loadPct.toFixed(0)}%`} />
 					</div>
-				</Section>
+				</Card>
 
-				{/* Memory */}
-				<Section icon="solar:ram-linear" title="Memory">
+				<Card icon="solar:ram-linear" title="Memory">
 					<div className="stat-rows">
 						<Row
 							label="Used / Total"
@@ -170,17 +183,16 @@ export function Dashboard() {
 						<Bar value={memPct} />
 						<Row label="Usage" value={`${memPct.toFixed(1)}%`} />
 					</div>
-				</Section>
+				</Card>
+			</div>
 
-				{/* Disks */}
+			{/* ── Storage ── */}
+			<SectionLabel>Storage</SectionLabel>
+			<div className="stat-grid">
 				{stats.disks.map((disk) => {
 					const dp = pct(disk.used, disk.total);
 					return (
-						<Section
-							key={disk.mount}
-							icon="solar:hard-drive-linear"
-							title={`Disk ${disk.mount}`}
-						>
+						<Card key={disk.mount} icon="solar:hard-drive-linear" title={disk.mount}>
 							<div className="stat-rows">
 								<Row
 									label="Used / Total"
@@ -190,15 +202,18 @@ export function Dashboard() {
 								<Row label="Usage" value={`${dp.toFixed(1)}%`} />
 								<Row label="Free" value={formatBytes(disk.free)} />
 							</div>
-						</Section>
+						</Card>
 					);
 				})}
+			</div>
 
-				{/* Network */}
-				{stats.network.length > 0 && (
-					<Section icon="solar:global-linear" title="Network">
+			{/* ── Network & Runtime ── */}
+			<SectionLabel>Network & Runtime</SectionLabel>
+			<div className="stat-grid-2">
+				{netIfaces.length > 0 && (
+					<Card icon="solar:global-linear" title="Network">
 						<div className="stat-rows">
-							{stats.network.map((iface) => (
+							{netIfaces.map((iface) => (
 								<Row
 									key={iface.name}
 									label={iface.name}
@@ -206,11 +221,10 @@ export function Dashboard() {
 								/>
 							))}
 						</div>
-					</Section>
+					</Card>
 				)}
 
-				{/* Runtime */}
-				<Section icon="solar:code-square-linear" title="Runtime">
+				<Card icon="solar:code-square-linear" title="Runtime">
 					<div className="stat-rows">
 						<Row label="Go" value={stats.go_runtime.version} />
 						<Row label="Goroutines" value={stats.go_runtime.goroutines} />
@@ -218,7 +232,7 @@ export function Dashboard() {
 						<Row label="Go Alloc" value={formatBytes(stats.memory.go_alloc)} />
 						<Row label="Go Sys" value={formatBytes(stats.memory.go_sys)} />
 					</div>
-				</Section>
+				</Card>
 			</div>
 		</div>
 	);

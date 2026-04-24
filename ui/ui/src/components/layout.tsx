@@ -33,7 +33,6 @@ const navItems = [
 
 export function Layout({ children }: { children: ReactNode }) {
 	const [hostname, setHostname] = useState<string>("");
-	const [root, setRoot] = useState<string>("");
 	const [sidebarOpen, setSidebarOpen] = useState(false);
 	const location = useLocation();
 	const navigate = useNavigate();
@@ -43,10 +42,7 @@ export function Layout({ children }: { children: ReactNode }) {
 	useEffect(() => {
 		fetch("/api/info")
 			.then((r) => r.json())
-			.then((d: { hostname: string; root: string }) => {
-				setHostname(d.hostname);
-				setRoot(d.root);
-			})
+			.then((d: { hostname: string }) => setHostname(d.hostname))
 			.catch(() => setHostname(window.location.hostname));
 	}, []);
 
@@ -110,9 +106,7 @@ export function Layout({ children }: { children: ReactNode }) {
 						>
 							<Icon icon="solar:hamburger-menu-linear" width={14} />
 						</button>
-						<span className="text-xs text-muted">
-							{hostname}{root ? ` : ${root}` : ""}
-						</span>
+						<span className="text-xs text-muted">{hostname}</span>
 					</div>
 					<ThemeToggle />
 				</header>
