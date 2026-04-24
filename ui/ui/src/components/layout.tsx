@@ -1,6 +1,7 @@
 import { Icon } from "@iconify/react";
 import { useTheme } from "next-themes";
 import { useEffect, useState, type ReactNode } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 function ThemeToggle() {
 	const { theme, setTheme } = useTheme();
@@ -25,20 +26,19 @@ function ThemeToggle() {
 	);
 }
 
-export type Tab = "dashboard" | "file-browser";
+const navItems = [
+	{ path: "/", icon: "solar:monitor-linear", label: "Dashboard" },
+	{ path: "/files", icon: "solar:folder-with-files-linear", label: "File Browser" },
+];
 
-export function Layout({
-	tab,
-	onTabChange,
-	children,
-}: {
-	tab: Tab;
-	onTabChange: (t: Tab) => void;
-	children: ReactNode;
-}) {
+export function Layout({ children }: { children: ReactNode }) {
 	const [hostname, setHostname] = useState<string>("");
 	const [root, setRoot] = useState<string>("");
 	const [sidebarOpen, setSidebarOpen] = useState(false);
+	const location = useLocation();
+	const navigate = useNavigate();
+
+	const activeTab = location.pathname.startsWith("/files") ? "/files" : "/";
 
 	useEffect(() => {
 		fetch("/api/info")
@@ -57,11 +57,6 @@ export function Layout({
 		window.addEventListener("resize", onResize);
 		return () => window.removeEventListener("resize", onResize);
 	}, []);
-
-	const navItems: { id: Tab; icon: string; label: string }[] = [
-		{ id: "dashboard", icon: "solar:monitor-linear", label: "Dashboard" },
-		{ id: "file-browser", icon: "solar:folder-with-files-linear", label: "File Browser" },
-	];
 
 	return (
 		<div className="layout-container">
@@ -89,11 +84,11 @@ export function Layout({
 					<div className="nav-section-label">System</div>
 					{navItems.map((item) => (
 						<button
-							key={item.id}
+							key={item.path}
 							type="button"
-							className={`nav-item${tab === item.id ? " active" : ""}`}
+							className={`nav-item${activeTab === item.path ? " active" : ""}`}
 							onClick={() => {
-								onTabChange(item.id);
+								navigate(item.path);
 								setSidebarOpen(false);
 							}}
 						>
@@ -121,9 +116,7 @@ export function Layout({
 					</div>
 					<ThemeToggle />
 				</header>
-				<main className="layout-content">
-					{children}
-				</main>
+				<main className="layout-content">{children}</main>
 			</div>
 		</div>
 	);

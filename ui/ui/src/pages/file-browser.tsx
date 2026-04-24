@@ -1,6 +1,7 @@
 import { Icon } from "@iconify/react";
 import hljs from "highlight.js";
 import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../components/button";
 import { type DataTableColumn, DataTable } from "../components/data-table";
 import { Modal } from "../components/modal";
@@ -350,13 +351,18 @@ function BreadcrumbButton({
 
 // ── Dashboard ─────────────────────────────────────────────────
 
-export function FileBrowser({
-	path,
-	onNavigate,
-}: {
-	path: string;
-	onNavigate: (p: string) => void;
-}) {
+export function FileBrowser() {
+	const location = useLocation();
+	const routerNavigate = useNavigate();
+
+	// Derive file path from URL: /files/some/dir → /some/dir
+	const path = location.pathname.replace(/^\/files/, "") || "/";
+
+	const navigate = (p: string) => {
+		const urlPath = p === "/" ? "/files" : `/files${p}`;
+		routerNavigate(urlPath);
+	};
+
 	const [data, setData] = useState<ListResponse | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
@@ -397,8 +403,6 @@ export function FileBrowser({
 			cancelled = true;
 		};
 	}, [path]);
-
-	const navigate = onNavigate;
 
 	const handleRename = async (newName: string) => {
 		const r = await fetch("/api/fs/rename", {
