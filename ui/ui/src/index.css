@@ -795,16 +795,13 @@ body {
 	align-items: baseline;
 	justify-content: space-between;
 	gap: 1rem;
-	min-width: 0;
-}
-.stat-row > :last-child {
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-	min-width: 0;
 }
 .stat-row > :first-child {
 	flex-shrink: 0;
+}
+.stat-row > :last-child {
+	word-break: break-all;
+	text-align: right;
 }
 .usage-bar {
 	height: 3px;
