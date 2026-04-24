@@ -85,10 +85,18 @@ export function Dashboard() {
 				if (!r.ok) throw new Error((await r.json()).error ?? r.statusText);
 				return (await r.json()) as ListResponse;
 			})
-			.then((d) => { if (!cancelled) setData(d); })
-			.catch((e: unknown) => { if (!cancelled) setError(e instanceof Error ? e.message : String(e)); })
-			.finally(() => { if (!cancelled) setLoading(false); });
-		return () => { cancelled = true; };
+			.then((d) => {
+				if (!cancelled) setData(d);
+			})
+			.catch((e: unknown) => {
+				if (!cancelled) setError(e instanceof Error ? e.message : String(e));
+			})
+			.finally(() => {
+				if (!cancelled) setLoading(false);
+			});
+		return () => {
+			cancelled = true;
+		};
 	}, [path]);
 
 	const navigate = (p: string) => {
@@ -101,7 +109,13 @@ export function Dashboard() {
 
 	const rows: Row[] = [];
 	if (path !== "/" && !search) {
-		rows.push({ name: "..", is_dir: true, size: 0, mod_time: "", _isParent: true });
+		rows.push({
+			name: "..",
+			is_dir: true,
+			size: 0,
+			mod_time: "",
+			_isParent: true,
+		});
 	}
 	if (data) {
 		const filtered = data.entries
@@ -199,7 +213,10 @@ export function Dashboard() {
 	};
 
 	return (
-		<PageShell title="File Browser" description="Manage and navigate your remote files.">
+		<PageShell
+			title="File Browser"
+			description="Manage and navigate your remote files."
+		>
 			<div className="h-full flex flex-col gap-4">
 				<div className="flex items-center justify-between">
 					<Breadcrumbs />
@@ -218,7 +235,7 @@ export function Dashboard() {
 					<DataTable<Row>
 						columns={columns}
 						data={rows}
-						keyExtractor={(row) => row._isParent ? "__parent__" : row.name}
+						keyExtractor={(row) => (row._isParent ? "__parent__" : row.name)}
 						isLoading={loading && !data}
 						emptyMessage="Empty directory."
 						onRowClick={handleRowClick}

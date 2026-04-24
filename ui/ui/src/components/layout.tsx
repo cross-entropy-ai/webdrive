@@ -17,7 +17,10 @@ function ThemeToggle() {
 			className="theme-toggle"
 			aria-label="Toggle theme"
 		>
-			<Icon icon={isDark ? "solar:sun-linear" : "solar:moon-linear"} width={14} />
+			<Icon
+				icon={isDark ? "solar:sun-linear" : "solar:moon-linear"}
+				width={14}
+			/>
 		</button>
 	);
 }
@@ -37,12 +40,26 @@ export function Layout({ children }: { children: ReactNode }) {
 				<div className="layout-header">
 					<div>
 						<span className="text-sm text-accent font-semibold">webdrive</span>
-						<span style={{ fontSize: "10px", marginLeft: "0.5rem" }} className="text-muted">v1.0.0</span>
+						<span
+							style={{ fontSize: "10px", marginLeft: "0.5rem" }}
+							className="text-muted"
+						>
+							v1.0.0
+						</span>
 					</div>
 				</div>
 				<div style={{ flex: 1, overflowY: "auto", padding: "1rem 0" }}>
 					<div style={{ padding: "0 1rem", marginBottom: "0.5rem" }}>
-						<div className="text-xs text-muted" style={{ textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.5rem" }}>System</div>
+						<div
+							className="text-xs text-muted"
+							style={{
+								textTransform: "uppercase",
+								letterSpacing: "0.05em",
+								marginBottom: "0.5rem",
+							}}
+						>
+							System
+						</div>
 						<div className="nav-item">
 							<Icon icon="solar:folder-with-files-linear" width={14} />
 							<span>File Browser</span>

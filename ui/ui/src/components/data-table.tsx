@@ -61,8 +61,12 @@ export function DataTable<T>({
 									>
 										<span className="th-content">
 											{col.label}
-											{col.sortDir === "asc" && <span className="sort-indicator">↑</span>}
-											{col.sortDir === "desc" && <span className="sort-indicator">↓</span>}
+											{col.sortDir === "asc" && (
+												<span className="sort-indicator">↑</span>
+											)}
+											{col.sortDir === "desc" && (
+												<span className="sort-indicator">↓</span>
+											)}
 										</span>
 									</th>
 								))}
@@ -80,7 +84,9 @@ export function DataTable<T>({
 										<td key={col.key}>
 											{col.render
 												? col.render(row)
-												: String((row as Record<string, unknown>)[col.key] ?? "")}
+												: String(
+														(row as Record<string, unknown>)[col.key] ?? "",
+													)}
 										</td>
 									))}
 									{actions && (
