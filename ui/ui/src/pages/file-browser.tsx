@@ -757,7 +757,7 @@ export function FileBrowser() {
 		</Button>
 	);
 
-	const menuButton = path !== "/" && (
+	const menuButton = (
 		<div className="popup-anchor" ref={menuRef}>
 			<Button variant="ghost" onClick={() => setMenuOpen(!menuOpen)}>
 				<Icon icon="solar:menu-dots-bold" width={15} />
@@ -774,17 +774,19 @@ export function FileBrowser() {
 						<Icon icon="solar:download-square-linear" width={14} />
 						Download
 					</a>
-					<button
-						type="button"
-						className="popup-item"
-						onClick={() => {
-							setRenameOpen(true);
-							setMenuOpen(false);
-						}}
-					>
-						<Icon icon="solar:pen-linear" width={14} />
-						Rename
-					</button>
+					{path !== "/" && (
+						<button
+							type="button"
+							className="popup-item"
+							onClick={() => {
+								setRenameOpen(true);
+								setMenuOpen(false);
+							}}
+						>
+							<Icon icon="solar:pen-linear" width={14} />
+							Rename
+						</button>
+					)}
 				</div>
 			)}
 		</div>
