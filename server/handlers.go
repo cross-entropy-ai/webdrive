@@ -24,7 +24,7 @@ func (h *handler) info(c *gin.Context) {
 	if err != nil {
 		hostname = "unknown"
 	}
-	c.JSON(http.StatusOK, gin.H{"hostname": hostname})
+	c.JSON(http.StatusOK, gin.H{"hostname": hostname, "root": h.root})
 }
 
 type entry struct {

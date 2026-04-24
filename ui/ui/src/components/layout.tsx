@@ -27,12 +27,16 @@ function ThemeToggle() {
 
 export function Layout({ children }: { children: ReactNode }) {
 	const [hostname, setHostname] = useState<string>("");
+	const [root, setRoot] = useState<string>("");
 	const [sidebarOpen, setSidebarOpen] = useState(false);
 
 	useEffect(() => {
 		fetch("/api/info")
 			.then((r) => r.json())
-			.then((d: { hostname: string }) => setHostname(d.hostname))
+			.then((d: { hostname: string; root: string }) => {
+				setHostname(d.hostname);
+				setRoot(d.root);
+			})
 			.catch(() => setHostname(window.location.hostname));
 	}, []);
 
@@ -105,7 +109,9 @@ export function Layout({ children }: { children: ReactNode }) {
 						>
 							<Icon icon="solar:hamburger-menu-linear" width={16} />
 						</button>
-						<div className="text-xs text-muted">{hostname}</div>
+						<div className="text-xs text-muted">
+								{hostname}{root ? ` : ${root}` : ""}
+							</div>
 					</div>
 					<div className="flex items-center gap-4">
 						<ThemeToggle />
