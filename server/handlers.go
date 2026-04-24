@@ -196,24 +196,28 @@ func (h *handler) preview(c *gin.Context) {
 		return
 	}
 
-	// Determine content type
 	ct := mime.TypeByExtension(filepath.Ext(info.Name()))
-	if ct == "" {
-		// Sniff content type from first 512 bytes
-		f, err := os.Open(full)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		defer f.Close()
-		buf := make([]byte, 512)
-		n, _ := f.Read(buf)
-		ct = http.DetectContentType(buf[:n])
+	if ct != "" {
+		c.Header("Content-Type", ct)
+		c.Header("Content-Length", fmt.Sprintf("%d", info.Size()))
+		c.File(full)
+		return
 	}
 
+	// Unknown extension — sniff content type, then stream from same handle
+	f, err := os.Open(full)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer f.Close()
+	buf := make([]byte, 512)
+	n, _ := f.Read(buf)
+	ct = http.DetectContentType(buf[:n])
+	_, _ = f.Seek(0, io.SeekStart)
 	c.Header("Content-Type", ct)
 	c.Header("Content-Length", fmt.Sprintf("%d", info.Size()))
-	c.File(full)
+	c.DataFromReader(http.StatusOK, info.Size(), ct, f, nil)
 }
 
 func normalize(p string) string {

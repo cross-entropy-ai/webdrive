@@ -182,14 +182,11 @@ function FilePreview({ path }: { path: string }) {
 function BreadcrumbButton({
 	path,
 	onNavigate,
-	open,
-	setOpen,
 }: {
 	path: string;
 	onNavigate: (p: string) => void;
-	open: boolean;
-	setOpen: (v: boolean) => void;
 }) {
+	const [open, setOpen] = useState(false);
 	const parts = path.split("/").filter(Boolean);
 	const segments = (() => {
 		let acc = "";
@@ -264,8 +261,6 @@ export function Dashboard() {
 	const [sortKey, setSortKey] = useState<"name" | "size" | "mod_time">("name");
 	const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
-	// Modals
-	const [pathModalOpen, setPathModalOpen] = useState(false);
 	const [renameOpen, setRenameOpen] = useState(false);
 
 	useEffect(() => {
@@ -349,12 +344,7 @@ export function Dashboard() {
 						<Button variant="ghost" onClick={() => navigate(parentOf(path))}>
 							<Icon icon="solar:arrow-left-linear" width={15} />
 						</Button>
-						<BreadcrumbButton
-							path={path}
-							onNavigate={navigate}
-							open={pathModalOpen}
-							setOpen={setPathModalOpen}
-						/>
+						<BreadcrumbButton path={path} onNavigate={navigate} />
 					</div>
 					{actions}
 				</div>
@@ -475,12 +465,7 @@ export function Dashboard() {
 							<Icon icon="solar:arrow-left-linear" width={15} />
 						</Button>
 					)}
-					<BreadcrumbButton
-						path={path}
-						onNavigate={navigate}
-						open={pathModalOpen}
-						setOpen={setPathModalOpen}
-					/>
+					<BreadcrumbButton path={path} onNavigate={navigate} />
 				</div>
 				{path !== "/" && actions}
 			</div>

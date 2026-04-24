@@ -58,9 +58,8 @@ export function Layout({ children }: { children: ReactNode }) {
 				/>
 			)}
 
-			{/* Sidebar */}
 			<div className={`layout-sidebar${sidebarOpen ? " sidebar-open" : ""}`}>
-				<div className="sidebar-header">
+				<div className="chrome-bar">
 					<span className="text-accent font-semibold">webdrive</span>
 					<button
 						type="button"
@@ -71,7 +70,7 @@ export function Layout({ children }: { children: ReactNode }) {
 						<Icon icon="solar:close-circle-linear" width={14} />
 					</button>
 				</div>
-				<div style={{ flex: 1, overflowY: "auto", padding: "0.75rem 0" }}>
+				<div className="sidebar-body">
 					<div className="nav-section-label">System</div>
 					<div className="nav-item">
 						<Icon icon="solar:folder-with-files-linear" width={14} />
@@ -80,9 +79,8 @@ export function Layout({ children }: { children: ReactNode }) {
 				</div>
 			</div>
 
-			{/* Main */}
 			<div className="layout-main">
-				<header className="layout-topbar">
+				<header className="chrome-bar">
 					<div className="flex items-center gap-2">
 						<button
 							type="button"
@@ -98,7 +96,7 @@ export function Layout({ children }: { children: ReactNode }) {
 					</div>
 					<ThemeToggle />
 				</header>
-				<main style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+				<main className="layout-content">
 					{children}
 				</main>
 			</div>

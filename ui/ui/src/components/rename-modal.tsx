@@ -20,13 +20,12 @@ export function RenameModal({
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
 
-	// Sync name when modal opens
 	useEffect(() => {
 		if (open) {
 			setName(initialName);
 			setError(null);
 		}
-	}, [open, initialName]);
+	}, [open]);
 
 	const handleSubmit = async () => {
 		setError(null);
@@ -42,10 +41,7 @@ export function RenameModal({
 	};
 
 	return (
-		<Modal
-			open={open}
-			onClose={onClose}
-		>
+		<Modal open={open} onClose={onClose}>
 			<Modal.Header>Rename</Modal.Header>
 			<Modal.Body>
 				<form
@@ -61,7 +57,7 @@ export function RenameModal({
 						autoFocus
 					/>
 					{error && <div className="error-box">{error}</div>}
-					<div className="flex items-center gap-2" style={{ justifyContent: "flex-end" }}>
+					<div className="flex items-center gap-2 justify-end">
 						<Button variant="ghost" type="button" onClick={onClose}>
 							Cancel
 						</Button>
