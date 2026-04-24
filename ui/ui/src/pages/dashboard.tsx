@@ -104,7 +104,7 @@ function FilePreview({ path }: { path: string }) {
 		setContent(null);
 		setBlobUrl(null);
 
-		const url = `/api/preview?path=${encodeURIComponent(path)}`;
+		const url = `/api/fs/preview?path=${encodeURIComponent(path)}`;
 		fetch(url)
 			.then(async (r) => {
 				if (!r.ok) {
@@ -195,7 +195,7 @@ function FilePreview({ path }: { path: string }) {
 			<span className="text-muted">
 				Cannot preview this file type ({contentType}).{" "}
 				<a
-					href={`/api/download?path=${encodeURIComponent(path)}`}
+					href={`/api/fs/download?path=${encodeURIComponent(path)}`}
 					className="text-accent"
 				>
 					Download instead
@@ -232,7 +232,7 @@ export function Dashboard() {
 		setLoading(true);
 		setError(null);
 		setIsFile(false);
-		fetch(`/api/list?path=${encodeURIComponent(path)}`)
+		fetch(`/api/fs/list?path=${encodeURIComponent(path)}`)
 			.then(async (r) => {
 				if (!r.ok) {
 					const body = await r.json();
@@ -267,7 +267,7 @@ export function Dashboard() {
 		setRenameError(null);
 		setRenameLoading(true);
 		try {
-			const r = await fetch("/api/rename", {
+			const r = await fetch("/api/fs/rename", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ path, new_name: renameName }),
@@ -302,7 +302,7 @@ export function Dashboard() {
 						/>
 						<div className="flex items-center gap-2">
 							<a
-								href={`/api/download?path=${encodeURIComponent(path)}`}
+								href={`/api/fs/download?path=${encodeURIComponent(path)}`}
 								target="_blank"
 								rel="noreferrer"
 							>
@@ -424,7 +424,7 @@ export function Dashboard() {
 					{path !== "/" && (
 						<div className="flex items-center gap-2">
 							<a
-								href={`/api/download?path=${encodeURIComponent(path)}`}
+								href={`/api/fs/download?path=${encodeURIComponent(path)}`}
 								target="_blank"
 								rel="noreferrer"
 							>

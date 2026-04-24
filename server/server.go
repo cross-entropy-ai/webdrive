@@ -28,10 +28,12 @@ func Run(cfg Config) error {
 	api := r.Group("/api")
 	h := &handler{root: cfg.Root}
 	api.GET("/info", h.info)
-	api.GET("/list", h.list)
-	api.GET("/download", h.download)
-	api.POST("/rename", h.rename)
-	api.GET("/preview", h.preview)
+
+	fs := api.Group("/fs")
+	fs.GET("/list", h.list)
+	fs.GET("/download", h.download)
+	fs.POST("/rename", h.rename)
+	fs.GET("/preview", h.preview)
 
 	uiFS := ui.FS()
 	r.NoRoute(spaHandler(uiFS))
