@@ -795,17 +795,24 @@ export function FileBrowser() {
 	if (isFile) {
 		return (
 			<div className="page-shell animate-fadeUp">
-				<div className="toolbar">
-					<BreadcrumbButton path={path} onNavigate={navigate} />
-					<div className="toolbar-group">{menuButton}</div>
-				</div>
-
 				{error && <div className="error-box">Error: {error}</div>}
 
 				<div className="flex-1">
 					<div className="datatable-wrapper">
-						<div className="datatable-header-bar">
-							<span className="text-sm text-muted">{baseName(path)}</span>
+						<div className="file-list-header">
+							<button
+								type="button"
+								className="file-list-back"
+								onClick={() => navigate(parentOf(path))}
+							>
+								<Icon
+									icon="solar:arrow-left-linear"
+									width={15}
+									className="text-muted"
+								/>
+								<span className="text-muted">{baseName(path)}</span>
+							</button>
+							<div className="toolbar-group">{menuButton}</div>
 						</div>
 						<div className="datatable-scroll">
 							<FilePreview path={path} />
@@ -839,33 +846,42 @@ export function FileBrowser() {
 
 	return (
 		<div className="page-shell animate-fadeUp">
-			<div className="toolbar">
-				<BreadcrumbButton path={path} onNavigate={navigate} />
-				<div className="toolbar-group">
-					{viewToggle}
-					{menuButton}
-				</div>
-			</div>
-
 			{error && <div className="error-box">Error: {error}</div>}
 
 			<div className="flex-1">
 				{viewMode === "gallery" ? (
 					<div className="datatable-wrapper">
-						<div className="datatable-header-bar">
-							<span className="text-sm text-muted">
-								{sortedEntries.length} items
-							</span>
-							<input
-								type="range"
-								className="zoom-slider"
-								min={ZOOM_MIN}
-								max={ZOOM_MAX}
-								value={ZOOM_MAX + ZOOM_MIN - galleryCols}
-								onChange={(e) =>
-									setGalleryCols(ZOOM_MAX + ZOOM_MIN - Number(e.target.value))
-								}
-							/>
+						<div className="file-list-header">
+							{path !== "/" ? (
+								<button
+									type="button"
+									className="file-list-back"
+									onClick={() => navigate(parentOf(path))}
+								>
+									<Icon
+										icon="solar:arrow-left-linear"
+										width={15}
+										className="text-muted"
+									/>
+									<span className="text-muted">..</span>
+								</button>
+							) : (
+								<span />
+							)}
+							<div className="toolbar-group">
+								<input
+									type="range"
+									className="zoom-slider"
+									min={ZOOM_MIN}
+									max={ZOOM_MAX}
+									value={ZOOM_MAX + ZOOM_MIN - galleryCols}
+									onChange={(e) =>
+										setGalleryCols(ZOOM_MAX + ZOOM_MIN - Number(e.target.value))
+									}
+								/>
+								{viewToggle}
+								{menuButton}
+							</div>
 						</div>
 						<div className="datatable-scroll">
 							{loading && !data ? (
@@ -892,22 +908,28 @@ export function FileBrowser() {
 								<div className="datatable-state">Empty directory.</div>
 							) : (
 								<div className="file-list">
-									{path !== "/" && (
-										<button
-											type="button"
-											className="file-list-item"
-											onClick={() => navigate(parentOf(path))}
-										>
-											<Icon
-												icon="solar:arrow-left-linear"
-												width={22}
-												className="text-muted"
-											/>
-											<div className="file-list-info">
-												<span className="file-list-name">..</span>
-											</div>
-										</button>
-									)}
+									<div className="file-list-header">
+										{path !== "/" ? (
+											<button
+												type="button"
+												className="file-list-back"
+												onClick={() => navigate(parentOf(path))}
+											>
+												<Icon
+													icon="solar:arrow-left-linear"
+													width={15}
+													className="text-muted"
+												/>
+												<span className="text-muted">..</span>
+											</button>
+										) : (
+											<span />
+										)}
+										<div className="toolbar-group">
+											{viewToggle}
+											{menuButton}
+										</div>
+									</div>
 									{sortedEntries.map((entry) => (
 										<button
 											key={entry.name}
