@@ -14,7 +14,7 @@ function ThemeToggle() {
 		<button
 			type="button"
 			onClick={() => setTheme(isDark ? "light" : "dark")}
-			className="theme-toggle"
+			className="icon-btn"
 			aria-label="Toggle theme"
 		>
 			<Icon
@@ -40,7 +40,6 @@ export function Layout({ children }: { children: ReactNode }) {
 			.catch(() => setHostname(window.location.hostname));
 	}, []);
 
-	// Close sidebar when resizing to desktop
 	useEffect(() => {
 		const onResize = () => {
 			if (window.innerWidth >= 768) setSidebarOpen(false);
@@ -51,7 +50,6 @@ export function Layout({ children }: { children: ReactNode }) {
 
 	return (
 		<div className="layout-container">
-			{/* Mobile overlay */}
 			{sidebarOpen && (
 				<div
 					className="sidebar-overlay"
@@ -62,60 +60,43 @@ export function Layout({ children }: { children: ReactNode }) {
 
 			{/* Sidebar */}
 			<div className={`layout-sidebar${sidebarOpen ? " sidebar-open" : ""}`}>
-				<div className="layout-header">
-					<div>
-						<span className="text-accent font-semibold">webdrive</span>
-					</div>
-					{/* Close button — mobile only */}
+				<div className="sidebar-header">
+					<span className="text-accent font-semibold">webdrive</span>
 					<button
 						type="button"
-						className="theme-toggle sidebar-close-btn"
+						className="icon-btn sidebar-close-btn"
 						onClick={() => setSidebarOpen(false)}
 						aria-label="Close sidebar"
 					>
-						<Icon icon="solar:close-circle-linear" width={16} />
+						<Icon icon="solar:close-circle-linear" width={14} />
 					</button>
 				</div>
-				<div style={{ flex: 1, overflowY: "auto", padding: "1rem 0" }}>
-					<div style={{ padding: "0 1rem", marginBottom: "0.5rem" }}>
-						<div
-							className="text-xs text-muted"
-							style={{
-								textTransform: "uppercase",
-								letterSpacing: "0.05em",
-								marginBottom: "0.5rem",
-							}}
-						>
-							System
-						</div>
-						<div className="nav-item">
-							<Icon icon="solar:folder-with-files-linear" width={14} />
-							<span>File Browser</span>
-						</div>
+				<div style={{ flex: 1, overflowY: "auto", padding: "0.75rem 0" }}>
+					<div className="nav-section-label">System</div>
+					<div className="nav-item">
+						<Icon icon="solar:folder-with-files-linear" width={14} />
+						<span>File Browser</span>
 					</div>
 				</div>
 			</div>
 
 			{/* Main */}
 			<div className="layout-main">
-				<header className="layout-header">
+				<header className="layout-topbar">
 					<div className="flex items-center gap-2">
-						{/* Hamburger — mobile only */}
 						<button
 							type="button"
-							className="theme-toggle sidebar-menu-btn"
+							className="icon-btn sidebar-menu-btn"
 							onClick={() => setSidebarOpen(true)}
 							aria-label="Open sidebar"
 						>
-							<Icon icon="solar:hamburger-menu-linear" width={16} />
+							<Icon icon="solar:hamburger-menu-linear" width={14} />
 						</button>
-						<div className="text-xs text-muted">
-								{hostname}{root ? ` : ${root}` : ""}
-							</div>
+						<span className="text-xs text-muted">
+							{hostname}{root ? ` : ${root}` : ""}
+						</span>
 					</div>
-					<div className="flex items-center gap-4">
-						<ThemeToggle />
-					</div>
+					<ThemeToggle />
 				</header>
 				<main style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
 					{children}
