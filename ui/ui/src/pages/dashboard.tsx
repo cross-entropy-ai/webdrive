@@ -168,7 +168,7 @@ export function Dashboard() {
 			{/* ── Overview ── */}
 			<SectionLabel>Overview</SectionLabel>
 			<div className="stat-grid-3">
-				<Card icon="solar:server-minimalistic-linear" title="System">
+				<Card icon="solar:server-square-linear" title="System">
 					<div className="stat-rows">
 						<Row icon="solar:monitor-linear" label="Hostname" value={stats.hostname} />
 						<Row icon="solar:cpu-linear" label="OS / Arch" value={`${stats.cpu.os} / ${stats.cpu.arch}`} />
@@ -178,18 +178,18 @@ export function Dashboard() {
 
 				<Card icon="solar:cpu-bolt-linear" title="CPU">
 					<div className="stat-rows">
-						<Row icon="solar:chip-linear" label="Cores" value={stats.cpu.count} />
-						<Row icon="solar:graph-up-linear" label="Load Avg" value={`${load[0]?.toFixed(2)}  ${load[1]?.toFixed(2)}  ${load[2]?.toFixed(2)}`} />
+						<Row icon="solar:cpu-linear" label="Cores" value={stats.cpu.count} />
+						<Row icon="solar:graph-linear" label="Load Avg" value={`${load[0]?.toFixed(2)}  ${load[1]?.toFixed(2)}  ${load[2]?.toFixed(2)}`} />
 						<Bar value={loadPct} />
-						<Row icon="solar:tuning-2-linear" label="Load / Cores" value={`${loadPct.toFixed(0)}%`} />
+						<Row icon="solar:tuning-linear" label="Load / Cores" value={`${loadPct.toFixed(0)}%`} />
 					</div>
 				</Card>
 
-				<Card icon="solar:sd-card-linear" title="Memory">
+				<Card icon="solar:slider-vertical-linear" title="Memory">
 					<div className="stat-rows">
-						<Row icon="solar:pie-chart-2-linear" label="Used / Total" value={`${formatBytes(stats.memory.used)} / ${formatBytes(stats.memory.total)}`} />
+						<Row icon="solar:chart-square-linear" label="Used / Total" value={`${formatBytes(stats.memory.used)} / ${formatBytes(stats.memory.total)}`} />
 						<Bar value={memPct} />
-						<Row icon="solar:tuning-2-linear" label="Usage" value={`${memPct.toFixed(1)}%`} />
+						<Row icon="solar:tuning-linear" label="Usage" value={`${memPct.toFixed(1)}%`} />
 					</div>
 				</Card>
 			</div>
@@ -206,10 +206,10 @@ export function Dashboard() {
 							title={disk.mount}
 						>
 							<div className="stat-rows">
-								<Row icon="solar:pie-chart-2-linear" label="Used / Total" value={`${formatBytes(disk.used)} / ${formatBytes(disk.total)}`} />
+								<Row icon="solar:chart-square-linear" label="Used / Total" value={`${formatBytes(disk.used)} / ${formatBytes(disk.total)}`} />
 								<Bar value={dp} />
-								<Row icon="solar:tuning-2-linear" label="Usage" value={`${dp.toFixed(1)}%`} />
-								<Row icon="solar:folder-open-linear" label="Free" value={formatBytes(disk.free)} />
+								<Row icon="solar:tuning-linear" label="Usage" value={`${dp.toFixed(1)}%`} />
+								<Row icon="solar:inbox-unread-linear" label="Free" value={formatBytes(disk.free)} />
 							</div>
 						</Card>
 					);
@@ -226,7 +226,7 @@ export function Dashboard() {
 								{netIfaces.map((iface) => (
 									<Row
 										key={iface.name}
-										icon="solar:plug-circle-linear"
+										icon="solar:link-linear"
 										label={iface.name}
 										value={iface.addrs.join(", ")}
 									/>
@@ -240,12 +240,12 @@ export function Dashboard() {
 			{/* ── Runtime ── */}
 			<SectionLabel>Runtime</SectionLabel>
 			<div className="stat-grid">
-				<Card icon="solar:programming-linear" title="Go">
+				<Card icon="solar:code-linear" title="Go">
 					<div className="stat-rows">
 						<Row icon="solar:tag-linear" label="Version" value={stats.go_runtime.version} />
-						<Row icon="solar:bolt-circle-linear" label="Goroutines" value={stats.go_runtime.goroutines} />
-						<Row icon="solar:refresh-circle-linear" label="GC Cycles" value={stats.go_runtime.num_gc} />
-						<Row icon="solar:pie-chart-2-linear" label="Alloc" value={formatBytes(stats.memory.go_alloc)} />
+						<Row icon="solar:bolt-linear" label="Goroutines" value={stats.go_runtime.goroutines} />
+						<Row icon="solar:restart-linear" label="GC Cycles" value={stats.go_runtime.num_gc} />
+						<Row icon="solar:chart-square-linear" label="Alloc" value={formatBytes(stats.memory.go_alloc)} />
 						<Row icon="solar:server-square-linear" label="Sys" value={formatBytes(stats.memory.go_sys)} />
 					</div>
 				</Card>
