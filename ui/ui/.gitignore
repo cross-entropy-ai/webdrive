@@ -3,7 +3,9 @@ node_modules
 
 # output
 out
-dist
+# dist/ is generated; only .gitkeep is tracked so go:embed has something to embed
+dist/*
+!dist/.gitkeep
 *.tgz
 
 # code coverage

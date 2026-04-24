@@ -30,6 +30,10 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+.claude/
 
 # Output
-dist/
+/webdrive
+# Built UI (generated); only .gitkeep is tracked so go:embed has something to find
+ui/ui/dist/*
+!ui/ui/dist/.gitkeep
