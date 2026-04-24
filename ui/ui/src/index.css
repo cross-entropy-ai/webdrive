@@ -799,6 +799,11 @@ body {
 .stat-row > :first-child {
 	flex-shrink: 0;
 }
+.stat-row-label {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.375rem;
+}
 .stat-row > :last-child {
 	word-break: break-all;
 	text-align: right;
