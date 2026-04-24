@@ -42,16 +42,6 @@ function formatTime(iso: string): string {
 	});
 }
 
-function readPathFromHash(): string {
-	const raw = location.hash.slice(1);
-	if (!raw) return "/";
-	try {
-		return decodeURIComponent(raw);
-	} catch {
-		return "/";
-	}
-}
-
 function joinPath(dir: string, name: string): string {
 	if (dir === "/" || dir === "") return `/${name}`;
 	return `${dir.replace(/\/+$/, "")}/${name}`;
@@ -94,23 +84,65 @@ function langFromFilename(name: string): string | undefined {
 	const ext = name.split(".").pop()?.toLowerCase();
 	if (!ext) return undefined;
 	const map: Record<string, string> = {
-		ts: "typescript", tsx: "typescript", js: "javascript", jsx: "javascript",
-		py: "python", rb: "ruby", rs: "rust", go: "go", java: "java",
-		c: "c", h: "c", cpp: "cpp", hpp: "cpp", cs: "csharp",
-		sh: "bash", bash: "bash", zsh: "bash", fish: "bash",
-		json: "json", yaml: "yaml", yml: "yaml", toml: "ini",
-		xml: "xml", html: "xml", htm: "xml", svg: "xml",
-		css: "css", scss: "scss", less: "less",
-		sql: "sql", md: "markdown", dockerfile: "dockerfile",
-		makefile: "makefile", lua: "lua", php: "php", swift: "swift",
-		kt: "kotlin", r: "r", pl: "perl", ex: "elixir", erl: "erlang",
-		hs: "haskell", ml: "ocaml", vim: "vim", tf: "hcl",
-		proto: "protobuf", graphql: "graphql", gql: "graphql",
+		ts: "typescript",
+		tsx: "typescript",
+		js: "javascript",
+		jsx: "javascript",
+		py: "python",
+		rb: "ruby",
+		rs: "rust",
+		go: "go",
+		java: "java",
+		c: "c",
+		h: "c",
+		cpp: "cpp",
+		hpp: "cpp",
+		cs: "csharp",
+		sh: "bash",
+		bash: "bash",
+		zsh: "bash",
+		fish: "bash",
+		json: "json",
+		yaml: "yaml",
+		yml: "yaml",
+		toml: "ini",
+		xml: "xml",
+		html: "xml",
+		htm: "xml",
+		svg: "xml",
+		css: "css",
+		scss: "scss",
+		less: "less",
+		sql: "sql",
+		md: "markdown",
+		dockerfile: "dockerfile",
+		makefile: "makefile",
+		lua: "lua",
+		php: "php",
+		swift: "swift",
+		kt: "kotlin",
+		r: "r",
+		pl: "perl",
+		ex: "elixir",
+		erl: "erlang",
+		hs: "haskell",
+		ml: "ocaml",
+		vim: "vim",
+		tf: "hcl",
+		proto: "protobuf",
+		graphql: "graphql",
+		gql: "graphql",
 	};
 	return map[ext];
 }
 
-function CodePreview({ content, filename }: { content: string; filename: string }) {
+function CodePreview({
+	content,
+	filename,
+}: {
+	content: string;
+	filename: string;
+}) {
 	const codeRef = useRef<HTMLElement>(null);
 
 	useEffect(() => {
@@ -131,7 +163,11 @@ function CodePreview({ content, filename }: { content: string; filename: string 
 
 	return (
 		<div className="preview-text">
-			<pre><code ref={codeRef} className="hljs">{content}</code></pre>
+			<pre>
+				<code ref={codeRef} className="hljs">
+					{content}
+				</code>
+			</pre>
 		</div>
 	);
 }
@@ -198,23 +234,42 @@ function FilePreview({ path }: { path: string }) {
 		return <CodePreview content={content} filename={baseName(path)} />;
 	}
 	if (cat === "image" && blobUrl) {
-		return <div className="preview-media"><img src={blobUrl} alt={baseName(path)} /></div>;
+		return (
+			<div className="preview-media">
+				<img src={blobUrl} alt={baseName(path)} />
+			</div>
+		);
 	}
 	if (cat === "video" && blobUrl) {
-		return <div className="preview-media"><video src={blobUrl} controls /></div>;
+		return (
+			<div className="preview-media">
+				<video src={blobUrl} controls />
+			</div>
+		);
 	}
 	if (cat === "audio" && blobUrl) {
-		return <div className="preview-media"><audio src={blobUrl} controls /></div>;
+		return (
+			<div className="preview-media">
+				<audio src={blobUrl} controls />
+			</div>
+		);
 	}
 	if (cat === "pdf" && blobUrl) {
-		return <div className="preview-media"><iframe src={blobUrl} title={baseName(path)} /></div>;
+		return (
+			<div className="preview-media">
+				<iframe src={blobUrl} title={baseName(path)} />
+			</div>
+		);
 	}
 
 	return (
 		<div className="datatable-state">
 			<span className="text-muted">
 				Cannot preview ({contentType}).{" "}
-				<a href={`/api/fs/download?path=${encodeURIComponent(path)}`} className="text-accent">
+				<a
+					href={`/api/fs/download?path=${encodeURIComponent(path)}`}
+					className="text-accent"
+				>
 					Download
 				</a>
 			</span>
@@ -295,24 +350,22 @@ function BreadcrumbButton({
 
 // ── Dashboard ─────────────────────────────────────────────────
 
-export function FileBrowser() {
-	const [path, setPath] = useState<string>(readPathFromHash);
+export function FileBrowser({
+	path,
+	onNavigate,
+}: {
+	path: string;
+	onNavigate: (p: string) => void;
+}) {
 	const [data, setData] = useState<ListResponse | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [isFile, setIsFile] = useState(false);
 
-	// Sort
 	const [sortKey, setSortKey] = useState<"name" | "size" | "mod_time">("name");
 	const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
 	const [renameOpen, setRenameOpen] = useState(false);
-
-	useEffect(() => {
-		const onHash = () => setPath(readPathFromHash());
-		window.addEventListener("hashchange", onHash);
-		return () => window.removeEventListener("hashchange", onHash);
-	}, []);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -345,9 +398,7 @@ export function FileBrowser() {
 		};
 	}, [path]);
 
-	const navigate = (p: string) => {
-		location.hash = encodeURIComponent(p);
-	};
+	const navigate = onNavigate;
 
 	const handleRename = async (newName: string) => {
 		const r = await fetch("/api/fs/rename", {
