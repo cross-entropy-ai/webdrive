@@ -257,6 +257,34 @@ func (h *handler) preview(c *gin.Context) {
 	c.DataFromReader(http.StatusOK, info.Size(), ct, f, nil)
 }
 
+func (h *handler) delete(c *gin.Context) {
+	var req struct {
+		Path string `json:"path"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+	if normalize(req.Path) == "/" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot delete root directory"})
+		return
+	}
+	full, err := h.resolve(req.Path)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if _, err := os.Stat(full); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	if err := os.RemoveAll(full); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
 func normalize(p string) string {
 	if p == "" {
 		return "/"

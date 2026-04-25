@@ -739,6 +739,8 @@ export function FileBrowser() {
 	const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
 	const [renameOpen, setRenameOpen] = useState(false);
+	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [deleting, setDeleting] = useState(false);
 	const [viewMode, setViewMode] = useState<"list" | "gallery">("list");
 	const [galleryCols, setGalleryCols] = useState(5);
 	const [zoomMax, setZoomMax] = useState(8);
@@ -784,6 +786,25 @@ export function FileBrowser() {
 		const body = await r.json();
 		if (!r.ok) throw new Error(body.error ?? "rename failed");
 		navigate(joinPath(parentOf(path), newName));
+	};
+
+	const handleDelete = async () => {
+		setDeleting(true);
+		try {
+			const r = await fetch("/api/fs/delete", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ path }),
+			});
+			const body = await r.json();
+			if (!r.ok) throw new Error(body.error ?? "delete failed");
+			navigate(parentOf(path));
+		} catch (e: unknown) {
+			setError(e instanceof Error ? e.message : String(e));
+		} finally {
+			setDeleting(false);
+			setDeleteOpen(false);
+		}
 	};
 
 	// Popup menu
@@ -841,6 +862,19 @@ export function FileBrowser() {
 						>
 							<Icon icon="solar:pen-linear" width={14} />
 							Rename
+						</button>
+					)}
+					{path !== "/" && (
+						<button
+							type="button"
+							className="popup-item text-danger"
+							onClick={() => {
+								setDeleteOpen(true);
+								setMenuOpen(false);
+							}}
+						>
+							<Icon icon="solar:trash-bin-2-linear" width={14} />
+							Delete
 						</button>
 					)}
 				</div>
@@ -959,6 +993,26 @@ export function FileBrowser() {
 				initialName={baseName(path)}
 				onRename={handleRename}
 			/>
+
+			<Modal open={deleteOpen} onClose={() => setDeleteOpen(false)}>
+				<Modal.Header>Delete</Modal.Header>
+				<Modal.Body>
+					<p>
+						Delete <strong>{baseName(path)}</strong>? This cannot be undone.
+					</p>
+					<div
+						className="flex justify-end gap-2"
+						style={{ marginTop: "0.75rem" }}
+					>
+						<Button variant="ghost" onClick={() => setDeleteOpen(false)}>
+							Cancel
+						</Button>
+						<Button variant="danger" onClick={handleDelete} disabled={deleting}>
+							{deleting ? "Deleting..." : "Delete"}
+						</Button>
+					</div>
+				</Modal.Body>
+			</Modal>
 		</div>
 	);
 }
