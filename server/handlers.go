@@ -95,50 +95,82 @@ func (h *handler) list(c *gin.Context) {
 }
 
 func (h *handler) download(c *gin.Context) {
-	reqPath := c.Query("path")
-	full, err := h.resolve(reqPath)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	paths := c.QueryArray("path")
+	if len(paths) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "path is required"})
 		return
 	}
-	info, err := os.Stat(full)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		return
+
+	// Single file (non-directory) — serve directly
+	if len(paths) == 1 {
+		full, err := h.resolve(paths[0])
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		info, err := os.Stat(full)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		if !info.IsDir() {
+			c.FileAttachment(full, info.Name())
+			return
+		}
 	}
-	if info.IsDir() {
-		zipName := filepath.Base(full) + ".zip"
-		c.Header("Content-Type", "application/zip")
-		c.Header("Content-Disposition", `attachment; filename="`+zipName+`"`)
-		zw := zip.NewWriter(c.Writer)
-		defer zw.Close()
-		_ = filepath.Walk(full, func(path string, fi os.FileInfo, err error) error {
+
+	// Multiple paths or single directory — zip them
+	c.Header("Content-Type", "application/zip")
+	c.Header("Content-Disposition", `attachment; filename="download.zip"`)
+	zw := zip.NewWriter(c.Writer)
+	defer zw.Close()
+
+	for _, reqPath := range paths {
+		full, err := h.resolve(reqPath)
+		if err != nil {
+			continue
+		}
+		info, err := os.Stat(full)
+		if err != nil {
+			continue
+		}
+		base := filepath.Base(full)
+		if info.IsDir() {
+			_ = filepath.Walk(full, func(path string, fi os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+				rel, _ := filepath.Rel(full, path)
+				name := filepath.Join(base, rel)
+				if fi.IsDir() {
+					_, err = zw.Create(name + "/")
+					return err
+				}
+				w, err := zw.Create(name)
+				if err != nil {
+					return err
+				}
+				f, err := os.Open(path)
+				if err != nil {
+					return err
+				}
+				defer f.Close()
+				_, err = io.Copy(w, f)
+				return err
+			})
+		} else {
+			w, err := zw.Create(base)
 			if err != nil {
-				return err
+				continue
 			}
-			rel, _ := filepath.Rel(full, path)
-			if rel == "." {
-				return nil
-			}
-			if fi.IsDir() {
-				_, err = zw.Create(rel + "/")
-				return err
-			}
-			w, err := zw.Create(rel)
+			f, err := os.Open(full)
 			if err != nil {
-				return err
+				continue
 			}
-			f, err := os.Open(path)
-			if err != nil {
-				return err
-			}
-			defer f.Close()
-			_, err = io.Copy(w, f)
-			return err
-		})
-		return
+			io.Copy(w, f)
+			f.Close()
+		}
 	}
-	c.FileAttachment(full, info.Name())
 }
 
 func (h *handler) rename(c *gin.Context) {
@@ -259,27 +291,43 @@ func (h *handler) preview(c *gin.Context) {
 
 func (h *handler) delete(c *gin.Context) {
 	var req struct {
-		Path string `json:"path"`
+		Paths []string `json:"paths"`
+		Path  string   `json:"path"` // backwards compat: single path
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
-	if normalize(req.Path) == "/" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot delete root directory"})
+	paths := req.Paths
+	if len(paths) == 0 && req.Path != "" {
+		paths = []string{req.Path}
+	}
+	if len(paths) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "path is required"})
 		return
 	}
-	full, err := h.resolve(req.Path)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+
+	var errors []string
+	for _, p := range paths {
+		if normalize(p) == "/" {
+			errors = append(errors, "cannot delete root directory")
+			continue
+		}
+		full, err := h.resolve(p)
+		if err != nil {
+			errors = append(errors, err.Error())
+			continue
+		}
+		if _, err := os.Stat(full); err != nil {
+			errors = append(errors, err.Error())
+			continue
+		}
+		if err := os.RemoveAll(full); err != nil {
+			errors = append(errors, err.Error())
+		}
 	}
-	if _, err := os.Stat(full); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		return
-	}
-	if err := os.RemoveAll(full); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if len(errors) > 0 {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": errors})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})

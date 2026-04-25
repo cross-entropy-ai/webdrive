@@ -792,35 +792,30 @@ export function FileBrowser() {
 		setSelected(new Set());
 	};
 
+	const handleBatchDownload = () => {
+		const params = new URLSearchParams();
+		for (const name of selected) {
+			params.append("path", joinPath(path, name));
+		}
+		window.open(`/api/fs/download?${params.toString()}`, "_blank");
+	};
+
 	const handleBatchDelete = async () => {
 		setBatchDeleting(true);
 		try {
-			const names = Array.from(selected);
-			const results = await Promise.allSettled(
-				names.map((name) =>
-					fetch("/api/fs/delete", {
-						method: "POST",
-						headers: { "Content-Type": "application/json" },
-						body: JSON.stringify({ path: joinPath(path, name) }),
-					}).then(async (r) => {
-						const body = await r.json();
-						if (!r.ok) throw new Error(body.error ?? "delete failed");
-					}),
-				),
-			);
-			const failedNames = names.filter(
-				(_, i) => results[i].status === "rejected",
-			);
-			const r = await fetch(`/api/fs/list?path=${encodeURIComponent(path)}`);
-			if (r.ok) setData(await r.json());
-			if (failedNames.length > 0) {
-				setSelected(new Set(failedNames));
-				setError(
-					`Failed to delete ${failedNames.length} of ${names.length} items`,
-				);
-			} else {
-				exitSelectMode();
+			const paths = Array.from(selected).map((name) => joinPath(path, name));
+			const r = await fetch("/api/fs/delete", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ paths }),
+			});
+			const body = await r.json();
+			if (!r.ok) {
+				setError(body.errors?.join("; ") ?? "delete failed");
 			}
+			const lr = await fetch(`/api/fs/list?path=${encodeURIComponent(path)}`);
+			if (lr.ok) setData(await lr.json());
+			exitSelectMode();
 		} catch (e: unknown) {
 			setError(e instanceof Error ? e.message : String(e));
 		} finally {
@@ -1075,23 +1070,56 @@ export function FileBrowser() {
 				<div className="datatable-wrapper">
 					<div className="file-list-header">
 						<div className="toolbar-group">
-							{path !== "/" && (
-								<Button
-									variant="ghost"
-									onClick={() => navigate(parentOf(path))}
-								>
-									<Icon icon="solar:arrow-left-linear" width={15} />
-								</Button>
+							{selectMode ? (
+								<>
+									<input
+										type="checkbox"
+										className="select-checkbox"
+										checked={
+											!!data &&
+											data.entries.length > 0 &&
+											selected.size === data.entries.length
+										}
+										ref={(el) => {
+											if (el)
+												el.indeterminate =
+													selected.size > 0 &&
+													(!data || selected.size < data.entries.length);
+										}}
+										onChange={toggleSelectAll}
+									/>
+									<span className="select-action-count">
+										{selected.size} selected
+									</span>
+									{selected.size > 0 && (
+										<>
+											<Button
+												variant="ghost"
+												onClick={handleBatchDownload}
+											>
+												<Icon icon="solar:download-square-linear" width={15} />
+											</Button>
+											<Button
+												variant="danger"
+												onClick={() => setBatchDeleteOpen(true)}
+											>
+												<Icon icon="solar:trash-bin-2-linear" width={15} />
+											</Button>
+										</>
+									)}
+								</>
+							) : (
+								path !== "/" && (
+									<Button
+										variant="ghost"
+										onClick={() => navigate(parentOf(path))}
+									>
+										<Icon icon="solar:arrow-left-linear" width={15} />
+									</Button>
+								)
 							)}
 						</div>
 						<div className="toolbar-group">
-							{selectMode && (
-								<Button variant="ghost" onClick={toggleSelectAll}>
-									{data && selected.size === data.entries.length
-										? "Deselect All"
-										: "Select All"}
-								</Button>
-							)}
 							{!isFile && viewMode === "gallery" && (
 								<input
 									type="range"
@@ -1104,7 +1132,13 @@ export function FileBrowser() {
 									}
 								/>
 							)}
-							{menuButton}
+							{selectMode ? (
+								<Button variant="ghost" onClick={exitSelectMode}>
+									<Icon icon="solar:close-circle-linear" width={15} />
+								</Button>
+							) : (
+								menuButton
+							)}
 						</div>
 					</div>
 
@@ -1203,16 +1237,6 @@ export function FileBrowser() {
 					</div>
 				</Modal.Body>
 			</Modal>
-
-			{selectMode && selected.size > 0 && (
-				<div className="select-action-bar">
-					<span className="select-action-count">{selected.size} selected</span>
-					<Button variant="danger" onClick={() => setBatchDeleteOpen(true)}>
-						<Icon icon="solar:trash-bin-2-linear" width={15} />
-						Delete
-					</Button>
-				</div>
-			)}
 
 			<Modal open={batchDeleteOpen} onClose={() => setBatchDeleteOpen(false)}>
 				<Modal.Header>Delete {selected.size} items</Modal.Header>
