@@ -1,5 +1,5 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/sh
+set -eu
 
 REPO="cross-entropy-ai/webdrive"
 INSTALL_DIR="/usr/local/bin"
@@ -7,6 +7,14 @@ BINARY="webdrive"
 
 step() {
   echo "==> $1"
+}
+
+sudo_cmd() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+  else
+    sudo "$@"
+  fi
 }
 
 # ── Step 1: Detect platform ──────────────────────────────────
@@ -48,7 +56,6 @@ ASSET="${BINARY}-${OS}-${ARCH}"
 URL="https://github.com/${REPO}/releases/download/${TAG}/${ASSET}"
 
 step "Downloading ${ASSET}"
-echo "    URL: $URL"
 
 curl -fsSL -o "/tmp/${BINARY}" "$URL"
 chmod +x "/tmp/${BINARY}"
@@ -57,7 +64,7 @@ chmod +x "/tmp/${BINARY}"
 
 step "Installing to ${INSTALL_DIR}/${BINARY}"
 
-mv "/tmp/${BINARY}" "${INSTALL_DIR}/${BINARY}"
+sudo_cmd mv "/tmp/${BINARY}" "${INSTALL_DIR}/${BINARY}"
 
 # ── Done ─────────────────────────────────────────────────────
 
