@@ -230,6 +230,9 @@ function GalleryView({
 	cols,
 	onColsChange,
 	onZoomMaxChange,
+	selectMode,
+	selected,
+	onToggleSelect,
 }: {
 	entries: Entry[];
 	dirPath: string;
@@ -237,6 +240,9 @@ function GalleryView({
 	cols: number;
 	onColsChange: (c: number) => void;
 	onZoomMaxChange: (max: number) => void;
+	selectMode?: boolean;
+	selected?: Set<string>;
+	onToggleSelect?: (name: string) => void;
 }) {
 	const gridRef = useRef<HTMLDivElement>(null);
 	const pinchRef = useRef<number | null>(null);
@@ -343,17 +349,30 @@ function GalleryView({
 					const fullPath = joinPath(dirPath, entry.name);
 					const media = entry.is_dir ? null : mediaTypeFromName(entry.name);
 					const isPreviewable = media === "image" || media === "video";
+					const isSelected = selectMode && selected?.has(entry.name);
 
 					return (
 						<button
 							key={entry.name}
 							type="button"
-							className={`gallery-item${isPreviewable ? " gallery-media" : ""}`}
+							className={`gallery-item${isPreviewable ? " gallery-media" : ""}${isSelected ? " selected" : ""}`}
 							onClick={() =>
-								isPreviewable ? openCarousel(entry.name) : onNavigate(fullPath)
+								selectMode && onToggleSelect
+									? onToggleSelect(entry.name)
+									: isPreviewable
+										? openCarousel(entry.name)
+										: onNavigate(fullPath)
 							}
 							title={entry.name}
 						>
+							{selectMode && (
+								<input
+									type="checkbox"
+									className="gallery-select-checkbox"
+									checked={!!isSelected}
+									readOnly
+								/>
+							)}
 							{isPreviewable ? (
 								<>
 									{media === "image" ? (
@@ -745,12 +764,79 @@ export function FileBrowser() {
 	const [galleryCols, setGalleryCols] = useState(5);
 	const [zoomMax, setZoomMax] = useState(8);
 
+	const [selectMode, setSelectMode] = useState(false);
+	const [selected, setSelected] = useState<Set<string>>(new Set());
+	const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
+	const [batchDeleting, setBatchDeleting] = useState(false);
+
+	const toggleSelect = (name: string) => {
+		setSelected((prev) => {
+			const next = new Set(prev);
+			if (next.has(name)) next.delete(name);
+			else next.add(name);
+			return next;
+		});
+	};
+
+	const toggleSelectAll = () => {
+		if (!data) return;
+		if (selected.size === data.entries.length) {
+			setSelected(new Set());
+		} else {
+			setSelected(new Set(data.entries.map((e) => e.name)));
+		}
+	};
+
+	const exitSelectMode = () => {
+		setSelectMode(false);
+		setSelected(new Set());
+	};
+
+	const handleBatchDelete = async () => {
+		setBatchDeleting(true);
+		try {
+			const names = Array.from(selected);
+			const results = await Promise.allSettled(
+				names.map((name) =>
+					fetch("/api/fs/delete", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ path: joinPath(path, name) }),
+					}).then(async (r) => {
+						const body = await r.json();
+						if (!r.ok) throw new Error(body.error ?? "delete failed");
+					}),
+				),
+			);
+			const failedNames = names.filter(
+				(_, i) => results[i].status === "rejected",
+			);
+			const r = await fetch(`/api/fs/list?path=${encodeURIComponent(path)}`);
+			if (r.ok) setData(await r.json());
+			if (failedNames.length > 0) {
+				setSelected(new Set(failedNames));
+				setError(
+					`Failed to delete ${failedNames.length} of ${names.length} items`,
+				);
+			} else {
+				exitSelectMode();
+			}
+		} catch (e: unknown) {
+			setError(e instanceof Error ? e.message : String(e));
+		} finally {
+			setBatchDeleting(false);
+			setBatchDeleteOpen(false);
+		}
+	};
+
 	useEffect(() => {
 		let cancelled = false;
 		setLoading(true);
 		setError(null);
 		setIsFile(false);
 		setData(null);
+		setSelectMode(false);
+		setSelected(new Set());
 		fetch(`/api/fs/list?path=${encodeURIComponent(path)}`)
 			.then(async (r) => {
 				if (!r.ok) {
@@ -822,17 +908,14 @@ export function FileBrowser() {
 		return () => document.removeEventListener("mousedown", onClick);
 	}, [menuOpen]);
 
-	const viewToggle = (
-		<Button
-			variant={viewMode === "gallery" ? "primary" : "ghost"}
-			onClick={() => setViewMode(viewMode === "list" ? "gallery" : "list")}
-		>
-			<Icon
-				icon={viewMode === "list" ? "solar:widget-linear" : "solar:list-linear"}
-				width={15}
-			/>
-		</Button>
-	);
+	const toggleSort = (key: "name" | "size" | "mod_time") => {
+		if (sortKey === key) {
+			setSortDir(sortDir === "asc" ? "desc" : "asc");
+		} else {
+			setSortKey(key);
+			setSortDir("asc");
+		}
+	};
 
 	const menuButton = (
 		<div className="popup-anchor" ref={menuRef}>
@@ -841,6 +924,88 @@ export function FileBrowser() {
 			</Button>
 			{menuOpen && (
 				<div className="popup-menu">
+					{!isFile && (
+						<>
+							<button
+								type="button"
+								className="popup-item"
+								onClick={() => {
+									selectMode ? exitSelectMode() : setSelectMode(true);
+									setMenuOpen(false);
+								}}
+							>
+								<Icon icon="solar:check-square-linear" width={14} />
+								{selectMode ? "Cancel Select" : "Select"}
+							</button>
+							<div className="popup-divider" />
+							<button
+								type="button"
+								className="popup-item"
+								onClick={() => {
+									setViewMode("list");
+									setMenuOpen(false);
+								}}
+							>
+								<span className="popup-check">
+									{viewMode === "list" && (
+										<Icon icon="solar:check-circle-bold" width={14} />
+									)}
+								</span>
+								<Icon icon="solar:list-linear" width={14} />
+								List
+							</button>
+							<button
+								type="button"
+								className="popup-item"
+								onClick={() => {
+									setViewMode("gallery");
+									setMenuOpen(false);
+								}}
+							>
+								<span className="popup-check">
+									{viewMode === "gallery" && (
+										<Icon icon="solar:check-circle-bold" width={14} />
+									)}
+								</span>
+								<Icon icon="solar:widget-linear" width={14} />
+								Gallery
+							</button>
+							<div className="popup-divider" />
+							{(
+								[
+									["name", "Name"],
+									["mod_time", "Date"],
+									["size", "Size"],
+								] as const
+							).map(([key, label]) => (
+								<button
+									key={key}
+									type="button"
+									className="popup-item"
+									onClick={() => {
+										toggleSort(key);
+										setMenuOpen(false);
+									}}
+								>
+									<span className="popup-check">
+										{sortKey === key && (
+											<Icon icon="solar:check-circle-bold" width={14} />
+										)}
+									</span>
+									<span>
+										{label}
+										{sortKey === key && (
+											<span className="text-muted">
+												{" "}
+												· {sortDir === "asc" ? "Asc" : "Desc"}
+											</span>
+										)}
+									</span>
+								</button>
+							))}
+							<div className="popup-divider" />
+						</>
+					)}
 					<a
 						href={downloadUrl(path)}
 						target="_blank"
@@ -851,7 +1016,7 @@ export function FileBrowser() {
 						<Icon icon="solar:download-square-linear" width={14} />
 						Download
 					</a>
-					{path !== "/" && (
+					{path !== "/" && !selectMode && (
 						<button
 							type="button"
 							className="popup-item"
@@ -864,7 +1029,7 @@ export function FileBrowser() {
 							Rename
 						</button>
 					)}
-					{path !== "/" && (
+					{path !== "/" && !selectMode && (
 						<button
 							type="button"
 							className="popup-item text-danger"
@@ -882,19 +1047,23 @@ export function FileBrowser() {
 		</div>
 	);
 
-	const sortedEntries =
-		!isFile && data
-			? [...data.entries].sort((a, b) => {
-					if (a.is_dir !== b.is_dir) return a.is_dir ? -1 : 1;
-					const dir = sortDir === "asc" ? 1 : -1;
-					if (sortKey === "name") return a.name.localeCompare(b.name) * dir;
-					if (sortKey === "size") return (a.size - b.size) * dir;
-					return (
-						(new Date(a.mod_time).getTime() - new Date(b.mod_time).getTime()) *
-						dir
-					);
-				})
-			: [];
+	const sortedEntries = useMemo(
+		() =>
+			!isFile && data
+				? [...data.entries].sort((a, b) => {
+						if (a.is_dir !== b.is_dir) return a.is_dir ? -1 : 1;
+						const dir = sortDir === "asc" ? 1 : -1;
+						if (sortKey === "name") return a.name.localeCompare(b.name) * dir;
+						if (sortKey === "size") return (a.size - b.size) * dir;
+						return (
+							(new Date(a.mod_time).getTime() -
+								new Date(b.mod_time).getTime()) *
+							dir
+						);
+					})
+				: [],
+		[data, isFile, sortKey, sortDir],
+	);
 
 	return (
 		<div className="page-shell animate-fadeUp">
@@ -916,6 +1085,13 @@ export function FileBrowser() {
 							)}
 						</div>
 						<div className="toolbar-group">
+							{selectMode && (
+								<Button variant="ghost" onClick={toggleSelectAll}>
+									{data && selected.size === data.entries.length
+										? "Deselect All"
+										: "Select All"}
+								</Button>
+							)}
 							{!isFile && viewMode === "gallery" && (
 								<input
 									type="range"
@@ -928,7 +1104,6 @@ export function FileBrowser() {
 									}
 								/>
 							)}
-							{!isFile && viewToggle}
 							{menuButton}
 						</div>
 					</div>
@@ -949,6 +1124,9 @@ export function FileBrowser() {
 									cols={galleryCols}
 									onColsChange={setGalleryCols}
 									onZoomMaxChange={setZoomMax}
+									selectMode={selectMode}
+									selected={selected}
+									onToggleSelect={toggleSelect}
 								/>
 							)
 						) : sortedEntries.length === 0 ? (
@@ -959,9 +1137,21 @@ export function FileBrowser() {
 									<button
 										key={entry.name}
 										type="button"
-										className="file-list-item"
-										onClick={() => navigate(joinPath(path, entry.name))}
+										className={`file-list-item${selectMode && selected.has(entry.name) ? " selected" : ""}`}
+										onClick={() =>
+											selectMode
+												? toggleSelect(entry.name)
+												: navigate(joinPath(path, entry.name))
+										}
 									>
+										{selectMode && (
+											<input
+												type="checkbox"
+												className="select-checkbox"
+												checked={selected.has(entry.name)}
+												readOnly
+											/>
+										)}
 										<Icon
 											icon={
 												entry.is_dir
@@ -1009,6 +1199,41 @@ export function FileBrowser() {
 						</Button>
 						<Button variant="danger" onClick={handleDelete} disabled={deleting}>
 							{deleting ? "Deleting..." : "Delete"}
+						</Button>
+					</div>
+				</Modal.Body>
+			</Modal>
+
+			{selectMode && selected.size > 0 && (
+				<div className="select-action-bar">
+					<span className="select-action-count">{selected.size} selected</span>
+					<Button variant="danger" onClick={() => setBatchDeleteOpen(true)}>
+						<Icon icon="solar:trash-bin-2-linear" width={15} />
+						Delete
+					</Button>
+				</div>
+			)}
+
+			<Modal open={batchDeleteOpen} onClose={() => setBatchDeleteOpen(false)}>
+				<Modal.Header>Delete {selected.size} items</Modal.Header>
+				<Modal.Body>
+					<p>
+						Delete <strong>{selected.size}</strong> selected item
+						{selected.size > 1 ? "s" : ""}? This cannot be undone.
+					</p>
+					<div
+						className="flex justify-end gap-2"
+						style={{ marginTop: "0.75rem" }}
+					>
+						<Button variant="ghost" onClick={() => setBatchDeleteOpen(false)}>
+							Cancel
+						</Button>
+						<Button
+							variant="danger"
+							onClick={handleBatchDelete}
+							disabled={batchDeleting}
+						>
+							{batchDeleting ? "Deleting..." : "Delete"}
 						</Button>
 					</div>
 				</Modal.Body>
