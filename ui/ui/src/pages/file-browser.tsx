@@ -1093,10 +1093,7 @@ export function FileBrowser() {
 									</span>
 									{selected.size > 0 && (
 										<>
-											<Button
-												variant="ghost"
-												onClick={handleBatchDownload}
-											>
+											<Button variant="ghost" onClick={handleBatchDownload}>
 												<Icon icon="solar:download-square-linear" width={15} />
 											</Button>
 											<Button
