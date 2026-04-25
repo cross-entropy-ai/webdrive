@@ -304,6 +304,7 @@
 	align-items: center;
 	justify-content: space-between;
 	padding: 0.25rem 0.75rem;
+	min-height: 2.25rem;
 	border-bottom: 1px solid var(--border);
 	background-color: var(--surface);
 	flex-shrink: 0;
