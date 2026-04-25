@@ -5,7 +5,7 @@ A single-binary file browser that serves any directory over HTTP with a clean we
 ## Install
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/cross-entropy-ai/webdrive/main/install.sh | sh
+curl -sSL https://raw.githubusercontent.com/cross-entropy-ai/webdrive/main/install.sh | bash
 ```
 
 Or download a binary from [Releases](https://github.com/cross-entropy-ai/webdrive/releases).

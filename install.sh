@@ -1,5 +1,5 @@
-#!/bin/sh
-set -eu
+#!/usr/bin/env bash
+set -euo pipefail
 
 REPO="cross-entropy-ai/webdrive"
 INSTALL_DIR="/usr/local/bin"
