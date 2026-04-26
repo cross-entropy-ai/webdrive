@@ -870,45 +870,86 @@ export function FileBrowser() {
 		fileProgress: number;
 	} | null>(null);
 
+	const [conflictFile, setConflictFile] = useState<string | null>(null);
+	const [applyAll, setApplyAll] = useState(false);
+	const applyAllRef = useRef(false);
+	const conflictResolveRef = useRef<((action: "skip" | "overwrite" | "cancel") => void) | null>(null);
+
+	const askConflict = (name: string): Promise<"skip" | "overwrite" | "cancel"> => {
+		return new Promise((resolve) => {
+			applyAllRef.current = false;
+			setApplyAll(false);
+			setConflictFile(name);
+			conflictResolveRef.current = (action) => {
+				setConflictFile(null);
+				conflictResolveRef.current = null;
+				resolve(action);
+			};
+		});
+	};
+
+	const uploadFile = (file: File): Promise<string | null> => {
+		return new Promise((resolve) => {
+			const form = new FormData();
+			form.append("path", path);
+			form.append("files", file);
+			const xhr = new XMLHttpRequest();
+			xhr.upload.onprogress = (e) => {
+				if (e.lengthComputable) {
+					setUploadState((s) =>
+						s ? { ...s, fileProgress: e.loaded / e.total } : s,
+					);
+				}
+			};
+			xhr.onload = () => {
+				if (xhr.status >= 400) {
+					try {
+						const body = JSON.parse(xhr.responseText);
+						resolve(body.errors?.join("; ") ?? file.name);
+					} catch {
+						resolve(file.name);
+					}
+				} else {
+					resolve(null);
+				}
+			};
+			xhr.onerror = () => resolve(file.name);
+			xhr.open("POST", "/api/fs/upload");
+			xhr.send(form);
+		});
+	};
+
 	const handleUpload = async (files: FileList) => {
 		const fileList = Array.from(files);
-		const total = fileList.length;
+		const existingNames = new Set(data?.entries.map((e) => e.name) ?? []);
+		const conflicts = fileList.filter((f) => existingNames.has(f.name));
+		const safe = fileList.filter((f) => !existingNames.has(f.name));
+
+		const toUpload = [...safe];
+		let rememberedAction: "skip" | "overwrite" | null = null;
+		for (const file of conflicts) {
+			let action: "skip" | "overwrite" | "cancel";
+			if (rememberedAction) {
+				action = rememberedAction;
+			} else {
+				action = await askConflict(file.name);
+				if (applyAllRef.current && action !== "cancel") {
+					rememberedAction = action;
+				}
+			}
+			if (action === "cancel") return;
+			if (action === "overwrite") toUpload.push(file);
+		}
+
+		const total = toUpload.length;
+		if (total === 0) return;
+
 		const errors: string[] = [];
-
 		for (let i = 0; i < total; i++) {
-			const file = fileList[i];
+			const file = toUpload[i];
 			setUploadState({ current: file.name, index: i, total, fileProgress: 0 });
-
-			await new Promise<void>((resolve) => {
-				const form = new FormData();
-				form.append("path", path);
-				form.append("files", file);
-				const xhr = new XMLHttpRequest();
-				xhr.upload.onprogress = (e) => {
-					if (e.lengthComputable) {
-						setUploadState((s) =>
-							s ? { ...s, fileProgress: e.loaded / e.total } : s,
-						);
-					}
-				};
-				xhr.onload = () => {
-					if (xhr.status >= 400) {
-						try {
-							const body = JSON.parse(xhr.responseText);
-							errors.push(body.errors?.join("; ") ?? file.name);
-						} catch {
-							errors.push(file.name);
-						}
-					}
-					resolve();
-				};
-				xhr.onerror = () => {
-					errors.push(file.name);
-					resolve();
-				};
-				xhr.open("POST", "/api/fs/upload");
-				xhr.send(form);
-			});
+			const err = await uploadFile(file);
+			if (err) errors.push(err);
 		}
 
 		setUploadState(null);
@@ -1313,6 +1354,42 @@ export function FileBrowser() {
 					}
 				}}
 			/>
+
+			<Modal open={conflictFile !== null} onClose={() => conflictResolveRef.current?.("cancel")}>
+				<Modal.Header>File already exists</Modal.Header>
+				<Modal.Body>
+					<p>
+						<strong>{conflictFile}</strong> already exists.
+					</p>
+					<label className="flex items-center gap-2" style={{ marginTop: "0.5rem" }}>
+						<input
+							type="checkbox"
+							className="select-checkbox"
+							style={{ pointerEvents: "auto" }}
+							checked={applyAll}
+							onChange={(e) => {
+								setApplyAll(e.target.checked);
+								applyAllRef.current = e.target.checked;
+							}}
+						/>
+						<span className="text-sm text-muted">Apply to all conflicts</span>
+					</label>
+					<div
+						className="flex justify-end gap-2"
+						style={{ marginTop: "0.75rem" }}
+					>
+						<Button variant="ghost" onClick={() => conflictResolveRef.current?.("cancel")}>
+							Cancel
+						</Button>
+						<Button variant="ghost" onClick={() => conflictResolveRef.current?.("skip")}>
+							Skip
+						</Button>
+						<Button variant="primary" onClick={() => conflictResolveRef.current?.("overwrite")}>
+							Overwrite
+						</Button>
+					</div>
+				</Modal.Body>
+			</Modal>
 
 			<RenameModal
 				open={renameOpen}
