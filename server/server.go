@@ -33,6 +33,7 @@ func Run(cfg Config) error {
 	fs.GET("/list", h.list)
 	fs.GET("/download", h.download)
 	fs.POST("/upload", h.upload)
+	fs.POST("/mkdir", h.mkdir)
 	fs.POST("/check", h.check)
 	fs.POST("/rename", h.rename)
 	fs.POST("/delete", h.delete)

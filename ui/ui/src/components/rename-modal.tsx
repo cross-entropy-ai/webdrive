@@ -8,6 +8,8 @@ interface RenameModalProps {
 	onClose: () => void;
 	initialName: string;
 	onRename: (newName: string) => Promise<void>;
+	title?: string;
+	buttonLabel?: string;
 }
 
 export function RenameModal({
@@ -15,6 +17,8 @@ export function RenameModal({
 	onClose,
 	initialName,
 	onRename,
+	title = "Rename",
+	buttonLabel = "Rename",
 }: RenameModalProps) {
 	const [name, setName] = useState(initialName);
 	const [error, setError] = useState<string | null>(null);
@@ -42,7 +46,7 @@ export function RenameModal({
 
 	return (
 		<Modal open={open} onClose={onClose}>
-			<Modal.Header>Rename</Modal.Header>
+			<Modal.Header>{title}</Modal.Header>
 			<Modal.Body>
 				<form
 					className="flex flex-col gap-3"
@@ -66,7 +70,7 @@ export function RenameModal({
 							type="submit"
 							disabled={loading || !name.trim()}
 						>
-							{loading ? "Renaming..." : "Rename"}
+							{loading ? `${buttonLabel}...` : buttonLabel}
 						</Button>
 					</div>
 				</form>

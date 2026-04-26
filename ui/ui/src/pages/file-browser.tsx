@@ -762,6 +762,7 @@ export function FileBrowser() {
 		if (r.ok) setData(await r.json());
 	};
 
+	const [newFolderOpen, setNewFolderOpen] = useState(false);
 	const [renameOpen, setRenameOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [deleting, setDeleting] = useState(false);
@@ -1049,6 +1050,17 @@ export function FileBrowser() {
 		await refreshListing();
 	};
 
+	const handleNewFolder = async (name: string) => {
+		const r = await fetch("/api/fs/mkdir", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ path, name }),
+		});
+		const body = await r.json();
+		if (!r.ok) throw new Error(body.error ?? "failed to create folder");
+		await refreshListing();
+	};
+
 	const handleRename = async (newName: string) => {
 		const r = await fetch("/api/fs/rename", {
 			method: "POST",
@@ -1191,6 +1203,19 @@ export function FileBrowser() {
 							))}
 							<div className="popup-divider" />
 						</>
+					)}
+					{!isFile && !selectMode && (
+						<button
+							type="button"
+							className="popup-item"
+							onClick={() => {
+								setNewFolderOpen(true);
+								setMenuOpen(false);
+							}}
+						>
+							<Icon icon="solar:add-folder-linear" width={14} />
+							New Folder
+						</button>
 					)}
 					{!isFile && !selectMode && (
 						<button
@@ -1531,6 +1556,15 @@ export function FileBrowser() {
 					</div>
 				</Modal.Body>
 			</Modal>
+
+			<RenameModal
+				open={newFolderOpen}
+				onClose={() => setNewFolderOpen(false)}
+				initialName=""
+				onRename={handleNewFolder}
+				title="New Folder"
+				buttonLabel="Create"
+			/>
 
 			<RenameModal
 				open={renameOpen}

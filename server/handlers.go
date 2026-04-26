@@ -228,6 +228,36 @@ func (h *handler) upload(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"ok": true, "count": len(files)})
 }
 
+func (h *handler) mkdir(c *gin.Context) {
+	var req struct {
+		Path string `json:"path"`
+		Name string `json:"name"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+	if req.Name == "" || !validRelPath(req.Name) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid folder name"})
+		return
+	}
+	dirFull, err := h.resolve(req.Path)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	target := filepath.Join(dirFull, req.Name)
+	if err := os.Mkdir(target, 0755); err != nil {
+		if os.IsExist(err) {
+			c.JSON(http.StatusConflict, gin.H{"error": "folder already exists"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
 func (h *handler) check(c *gin.Context) {
 	var req struct {
 		Dir   string   `json:"dir"`
