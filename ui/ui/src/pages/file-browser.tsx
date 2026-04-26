@@ -873,9 +873,13 @@ export function FileBrowser() {
 	const [conflictFile, setConflictFile] = useState<string | null>(null);
 	const [applyAll, setApplyAll] = useState(false);
 	const applyAllRef = useRef(false);
-	const conflictResolveRef = useRef<((action: "skip" | "overwrite" | "cancel") => void) | null>(null);
+	const conflictResolveRef = useRef<
+		((action: "skip" | "overwrite" | "cancel") => void) | null
+	>(null);
 
-	const askConflict = (name: string): Promise<"skip" | "overwrite" | "cancel"> => {
+	const askConflict = (
+		name: string,
+	): Promise<"skip" | "overwrite" | "cancel"> => {
 		return new Promise((resolve) => {
 			applyAllRef.current = false;
 			setApplyAll(false);
@@ -888,7 +892,10 @@ export function FileBrowser() {
 		});
 	};
 
-	const uploadFile = (file: File, relativePath?: string): Promise<string | null> => {
+	const uploadFile = (
+		file: File,
+		relativePath?: string,
+	): Promise<string | null> => {
 		return new Promise((resolve) => {
 			const form = new FormData();
 			form.append("path", path);
@@ -922,7 +929,9 @@ export function FileBrowser() {
 
 	type UploadItem = { file: File; relativePath: string };
 
-	const readEntries = async (entry: FileSystemDirectoryEntry): Promise<FileSystemEntry[]> => {
+	const readEntries = async (
+		entry: FileSystemDirectoryEntry,
+	): Promise<FileSystemEntry[]> => {
 		const reader = entry.createReader();
 		const all: FileSystemEntry[] = [];
 		let batch: FileSystemEntry[];
@@ -935,7 +944,10 @@ export function FileBrowser() {
 		return all;
 	};
 
-	const collectFiles = async (entry: FileSystemEntry, basePath: string): Promise<UploadItem[]> => {
+	const collectFiles = async (
+		entry: FileSystemEntry,
+		basePath: string,
+	): Promise<UploadItem[]> => {
 		if (entry.isFile) {
 			const file = await new Promise<File>((resolve, reject) =>
 				(entry as FileSystemFileEntry).file(resolve, reject),
@@ -990,7 +1002,8 @@ export function FileBrowser() {
 		for (const item of conflicts) {
 			const name = topNames(item);
 			if (seen.has(name)) {
-				if (rememberedAction === "overwrite" || !rememberedAction) toUpload.push(item);
+				if (rememberedAction === "overwrite" || !rememberedAction)
+					toUpload.push(item);
 				continue;
 			}
 
@@ -1014,7 +1027,12 @@ export function FileBrowser() {
 		const errors: string[] = [];
 		for (let i = 0; i < total; i++) {
 			const item = toUpload[i];
-			setUploadState({ current: item.relativePath, index: i, total, fileProgress: 0 });
+			setUploadState({
+				current: item.relativePath,
+				index: i,
+				total,
+				fileProgress: 0,
+			});
 			const err = await uploadFile(item.file, item.relativePath);
 			if (err) errors.push(err);
 		}
@@ -1349,25 +1367,32 @@ export function FileBrowser() {
 						</div>
 					</div>
 
-					{uploadState && (() => {
-						const pct = Math.round(((uploadState.index + uploadState.fileProgress) / uploadState.total) * 100);
-						return (
-							<div className="upload-status">
-								<div className="upload-status-info">
-									<span className="upload-status-name">{uploadState.current}</span>
-									<span className="text-muted text-xs">
-										{uploadState.index + 1}/{uploadState.total} · {pct}%
-									</span>
+					{uploadState &&
+						(() => {
+							const pct = Math.round(
+								((uploadState.index + uploadState.fileProgress) /
+									uploadState.total) *
+									100,
+							);
+							return (
+								<div className="upload-status">
+									<div className="upload-status-info">
+										<span className="upload-status-name">
+											{uploadState.current}
+										</span>
+										<span className="text-muted text-xs">
+											{uploadState.index + 1}/{uploadState.total} · {pct}%
+										</span>
+									</div>
+									<div className="upload-progress-bar">
+										<div
+											className="upload-progress-fill"
+											style={{ width: `${pct}%` }}
+										/>
+									</div>
 								</div>
-								<div className="upload-progress-bar">
-									<div
-										className="upload-progress-fill"
-										style={{ width: `${pct}%` }}
-									/>
-								</div>
-							</div>
-						);
-					})()}
+							);
+						})()}
 
 					<div className="datatable-scroll">
 						{isFile ? (
@@ -1451,13 +1476,19 @@ export function FileBrowser() {
 				}}
 			/>
 
-			<Modal open={conflictFile !== null} onClose={() => conflictResolveRef.current?.("cancel")}>
+			<Modal
+				open={conflictFile !== null}
+				onClose={() => conflictResolveRef.current?.("cancel")}
+			>
 				<Modal.Header>File already exists</Modal.Header>
 				<Modal.Body>
 					<p>
 						<strong>{conflictFile}</strong> already exists.
 					</p>
-					<label className="flex items-center gap-2" style={{ marginTop: "0.5rem" }}>
+					<label
+						className="flex items-center gap-2"
+						style={{ marginTop: "0.5rem" }}
+					>
 						<input
 							type="checkbox"
 							className="select-checkbox"
@@ -1474,13 +1505,22 @@ export function FileBrowser() {
 						className="flex justify-end gap-2"
 						style={{ marginTop: "0.75rem" }}
 					>
-						<Button variant="ghost" onClick={() => conflictResolveRef.current?.("cancel")}>
+						<Button
+							variant="ghost"
+							onClick={() => conflictResolveRef.current?.("cancel")}
+						>
 							Cancel
 						</Button>
-						<Button variant="ghost" onClick={() => conflictResolveRef.current?.("skip")}>
+						<Button
+							variant="ghost"
+							onClick={() => conflictResolveRef.current?.("skip")}
+						>
 							Skip
 						</Button>
-						<Button variant="primary" onClick={() => conflictResolveRef.current?.("overwrite")}>
+						<Button
+							variant="primary"
+							onClick={() => conflictResolveRef.current?.("overwrite")}
+						>
 							Overwrite
 						</Button>
 					</div>
