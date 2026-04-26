@@ -173,6 +173,43 @@ func (h *handler) download(c *gin.Context) {
 	}
 }
 
+func (h *handler) upload(c *gin.Context) {
+	dir := c.PostForm("path")
+	if dir == "" {
+		dir = "/"
+	}
+	dirFull, err := h.resolve(dir)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	form, err := c.MultipartForm()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid multipart form"})
+		return
+	}
+	files := form.File["files"]
+	if len(files) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no files provided"})
+		return
+	}
+
+	var errs []string
+	for _, fh := range files {
+		name := filepath.Base(fh.Filename)
+		dst := filepath.Join(dirFull, name)
+		if err := c.SaveUploadedFile(fh, dst); err != nil {
+			errs = append(errs, name+": "+err.Error())
+		}
+	}
+	if len(errs) > 0 {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": errs})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true, "count": len(files)})
+}
+
 func (h *handler) rename(c *gin.Context) {
 	var req struct {
 		Path    string `json:"path"`

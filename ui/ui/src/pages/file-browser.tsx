@@ -757,6 +757,11 @@ export function FileBrowser() {
 	const [sortKey, setSortKey] = useState<"name" | "size" | "mod_time">("name");
 	const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
+	const refreshListing = async () => {
+		const r = await fetch(`/api/fs/list?path=${encodeURIComponent(path)}`);
+		if (r.ok) setData(await r.json());
+	};
+
 	const [renameOpen, setRenameOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [deleting, setDeleting] = useState(false);
@@ -813,8 +818,7 @@ export function FileBrowser() {
 			if (!r.ok) {
 				setError(body.errors?.join("; ") ?? "delete failed");
 			}
-			const lr = await fetch(`/api/fs/list?path=${encodeURIComponent(path)}`);
-			if (lr.ok) setData(await lr.json());
+			await refreshListing();
 			exitSelectMode();
 		} catch (e: unknown) {
 			setError(e instanceof Error ? e.message : String(e));
@@ -857,6 +861,62 @@ export function FileBrowser() {
 			cancelled = true;
 		};
 	}, [path]);
+
+	const fileInputRef = useRef<HTMLInputElement>(null);
+	const [uploadState, setUploadState] = useState<{
+		current: string;
+		index: number;
+		total: number;
+		fileProgress: number;
+	} | null>(null);
+
+	const handleUpload = async (files: FileList) => {
+		const fileList = Array.from(files);
+		const total = fileList.length;
+		const errors: string[] = [];
+
+		for (let i = 0; i < total; i++) {
+			const file = fileList[i];
+			setUploadState({ current: file.name, index: i, total, fileProgress: 0 });
+
+			await new Promise<void>((resolve) => {
+				const form = new FormData();
+				form.append("path", path);
+				form.append("files", file);
+				const xhr = new XMLHttpRequest();
+				xhr.upload.onprogress = (e) => {
+					if (e.lengthComputable) {
+						setUploadState((s) =>
+							s ? { ...s, fileProgress: e.loaded / e.total } : s,
+						);
+					}
+				};
+				xhr.onload = () => {
+					if (xhr.status >= 400) {
+						try {
+							const body = JSON.parse(xhr.responseText);
+							errors.push(body.errors?.join("; ") ?? file.name);
+						} catch {
+							errors.push(file.name);
+						}
+					}
+					resolve();
+				};
+				xhr.onerror = () => {
+					errors.push(file.name);
+					resolve();
+				};
+				xhr.open("POST", "/api/fs/upload");
+				xhr.send(form);
+			});
+		}
+
+		setUploadState(null);
+		if (errors.length > 0) {
+			setError(`Failed to upload: ${errors.join(", ")}`);
+		}
+		await refreshListing();
+	};
 
 	const handleRename = async (newName: string) => {
 		const r = await fetch("/api/fs/rename", {
@@ -1001,6 +1061,19 @@ export function FileBrowser() {
 							<div className="popup-divider" />
 						</>
 					)}
+					{!isFile && !selectMode && (
+						<button
+							type="button"
+							className="popup-item"
+							onClick={() => {
+								fileInputRef.current?.click();
+								setMenuOpen(false);
+							}}
+						>
+							<Icon icon="solar:upload-square-linear" width={14} />
+							Upload
+						</button>
+					)}
 					<a
 						href={downloadUrl(path)}
 						target="_blank"
@@ -1139,6 +1212,26 @@ export function FileBrowser() {
 						</div>
 					</div>
 
+					{uploadState && (() => {
+						const pct = Math.round(((uploadState.index + uploadState.fileProgress) / uploadState.total) * 100);
+						return (
+							<div className="upload-status">
+								<div className="upload-status-info">
+									<span className="upload-status-name">{uploadState.current}</span>
+									<span className="text-muted text-xs">
+										{uploadState.index + 1}/{uploadState.total} · {pct}%
+									</span>
+								</div>
+								<div className="upload-progress-bar">
+									<div
+										className="upload-progress-fill"
+										style={{ width: `${pct}%` }}
+									/>
+								</div>
+							</div>
+						);
+					})()}
+
 					<div className="datatable-scroll">
 						{isFile ? (
 							<FilePreview path={path} />
@@ -1207,6 +1300,19 @@ export function FileBrowser() {
 					</div>
 				</div>
 			</div>
+
+			<input
+				type="file"
+				ref={fileInputRef}
+				multiple
+				style={{ display: "none" }}
+				onChange={(e) => {
+					if (e.target.files && e.target.files.length > 0) {
+						handleUpload(e.target.files);
+						e.target.value = "";
+					}
+				}}
+			/>
 
 			<RenameModal
 				open={renameOpen}

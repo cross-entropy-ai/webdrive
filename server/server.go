@@ -32,6 +32,7 @@ func Run(cfg Config) error {
 	fs := api.Group("/fs")
 	fs.GET("/list", h.list)
 	fs.GET("/download", h.download)
+	fs.POST("/upload", h.upload)
 	fs.POST("/rename", h.rename)
 	fs.POST("/delete", h.delete)
 	fs.GET("/preview", h.preview)
