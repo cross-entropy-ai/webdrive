@@ -991,33 +991,38 @@ export function FileBrowser() {
 	};
 
 	const handleUploadItems = async (items: UploadItem[]) => {
-		const existingNames = new Set(data?.entries.map((e) => e.name) ?? []);
-		const topNames = (item: UploadItem) => item.relativePath.split("/")[0];
-		const conflicts = items.filter((item) => existingNames.has(topNames(item)));
-		const safe = items.filter((item) => !existingNames.has(topNames(item)));
+		const r = await fetch("/api/fs/check", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				dir: path,
+				paths: items.map((i) => i.relativePath),
+			}),
+		});
+		const existingSet = new Set<string>();
+		if (r.ok) {
+			const body = await r.json();
+			for (const p of body.existing ?? []) existingSet.add(p);
+		}
+
+		const conflicts = items.filter((item) =>
+			existingSet.has(item.relativePath),
+		);
+		const safe = items.filter((item) => !existingSet.has(item.relativePath));
 
 		const toUpload = [...safe];
 		let rememberedAction: "skip" | "overwrite" | null = null;
-		const seen = new Set<string>();
 		for (const item of conflicts) {
-			const name = topNames(item);
-			if (seen.has(name)) {
-				if (rememberedAction === "overwrite" || !rememberedAction)
-					toUpload.push(item);
-				continue;
-			}
-
 			let action: "skip" | "overwrite" | "cancel";
 			if (rememberedAction) {
 				action = rememberedAction;
 			} else {
-				action = await askConflict(name);
+				action = await askConflict(item.relativePath);
 				if (applyAllRef.current && action !== "cancel") {
 					rememberedAction = action;
 				}
 			}
 			if (action === "cancel") return;
-			seen.add(name);
 			if (action === "overwrite") toUpload.push(item);
 		}
 

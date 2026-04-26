@@ -205,8 +205,7 @@ func (h *handler) upload(c *gin.Context) {
 		} else {
 			relPath = filepath.Base(fh.Filename)
 		}
-		// Prevent path traversal
-		if strings.HasPrefix(relPath, "..") || strings.Contains(relPath, "/../") || filepath.IsAbs(relPath) {
+		if !validRelPath(relPath) {
 			errs = append(errs, relPath+": invalid path")
 			continue
 		}
@@ -227,6 +226,33 @@ func (h *handler) upload(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true, "count": len(files)})
+}
+
+func (h *handler) check(c *gin.Context) {
+	var req struct {
+		Dir   string   `json:"dir"`
+		Paths []string `json:"paths"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+	dirFull, err := h.resolve(req.Dir)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	existing := make([]string, 0)
+	for _, p := range req.Paths {
+		if !validRelPath(p) {
+			continue
+		}
+		full := filepath.Join(dirFull, filepath.Clean(p))
+		if _, err := os.Stat(full); err == nil {
+			existing = append(existing, p)
+		}
+	}
+	c.JSON(http.StatusOK, gin.H{"existing": existing})
 }
 
 func (h *handler) rename(c *gin.Context) {
@@ -387,6 +413,11 @@ func (h *handler) delete(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+func validRelPath(p string) bool {
+	clean := filepath.Clean(p)
+	return clean != ".." && !strings.HasPrefix(clean, "../") && !filepath.IsAbs(clean)
 }
 
 func normalize(p string) string {
