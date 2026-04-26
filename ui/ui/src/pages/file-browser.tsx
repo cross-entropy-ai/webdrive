@@ -888,11 +888,12 @@ export function FileBrowser() {
 		});
 	};
 
-	const uploadFile = (file: File): Promise<string | null> => {
+	const uploadFile = (file: File, relativePath?: string): Promise<string | null> => {
 		return new Promise((resolve) => {
 			const form = new FormData();
 			form.append("path", path);
 			form.append("files", file);
+			form.append("relativePaths", relativePath ?? file.name);
 			const xhr = new XMLHttpRequest();
 			xhr.upload.onprogress = (e) => {
 				if (e.lengthComputable) {
@@ -919,26 +920,92 @@ export function FileBrowser() {
 		});
 	};
 
+	type UploadItem = { file: File; relativePath: string };
+
+	const readEntries = async (entry: FileSystemDirectoryEntry): Promise<FileSystemEntry[]> => {
+		const reader = entry.createReader();
+		const all: FileSystemEntry[] = [];
+		let batch: FileSystemEntry[];
+		do {
+			batch = await new Promise((resolve, reject) =>
+				reader.readEntries(resolve, reject),
+			);
+			all.push(...batch);
+		} while (batch.length > 0);
+		return all;
+	};
+
+	const collectFiles = async (entry: FileSystemEntry, basePath: string): Promise<UploadItem[]> => {
+		if (entry.isFile) {
+			const file = await new Promise<File>((resolve, reject) =>
+				(entry as FileSystemFileEntry).file(resolve, reject),
+			);
+			return [{ file, relativePath: basePath }];
+		}
+		const items: UploadItem[] = [];
+		const entries = await readEntries(entry as FileSystemDirectoryEntry);
+		for (const child of entries) {
+			items.push(...(await collectFiles(child, `${basePath}/${child.name}`)));
+		}
+		return items;
+	};
+
+	const handleDropUpload = async (dataTransfer: DataTransfer) => {
+		const items: UploadItem[] = [];
+		const entries = Array.from(dataTransfer.items)
+			.map((item) => item.webkitGetAsEntry?.())
+			.filter((e): e is FileSystemEntry => e !== null && e !== undefined);
+
+		if (entries.length > 0) {
+			for (const entry of entries) {
+				items.push(...(await collectFiles(entry, entry.name)));
+			}
+		} else {
+			for (const file of Array.from(dataTransfer.files)) {
+				items.push({ file, relativePath: file.name });
+			}
+		}
+
+		if (items.length === 0) return;
+		await handleUploadItems(items);
+	};
+
 	const handleUpload = async (files: FileList) => {
-		const fileList = Array.from(files);
+		const items: UploadItem[] = Array.from(files).map((f) => ({
+			file: f,
+			relativePath: f.name,
+		}));
+		await handleUploadItems(items);
+	};
+
+	const handleUploadItems = async (items: UploadItem[]) => {
 		const existingNames = new Set(data?.entries.map((e) => e.name) ?? []);
-		const conflicts = fileList.filter((f) => existingNames.has(f.name));
-		const safe = fileList.filter((f) => !existingNames.has(f.name));
+		const topNames = (item: UploadItem) => item.relativePath.split("/")[0];
+		const conflicts = items.filter((item) => existingNames.has(topNames(item)));
+		const safe = items.filter((item) => !existingNames.has(topNames(item)));
 
 		const toUpload = [...safe];
 		let rememberedAction: "skip" | "overwrite" | null = null;
-		for (const file of conflicts) {
+		const seen = new Set<string>();
+		for (const item of conflicts) {
+			const name = topNames(item);
+			if (seen.has(name)) {
+				if (rememberedAction === "overwrite" || !rememberedAction) toUpload.push(item);
+				continue;
+			}
+
 			let action: "skip" | "overwrite" | "cancel";
 			if (rememberedAction) {
 				action = rememberedAction;
 			} else {
-				action = await askConflict(file.name);
+				action = await askConflict(name);
 				if (applyAllRef.current && action !== "cancel") {
 					rememberedAction = action;
 				}
 			}
 			if (action === "cancel") return;
-			if (action === "overwrite") toUpload.push(file);
+			seen.add(name);
+			if (action === "overwrite") toUpload.push(item);
 		}
 
 		const total = toUpload.length;
@@ -946,9 +1013,9 @@ export function FileBrowser() {
 
 		const errors: string[] = [];
 		for (let i = 0; i < total; i++) {
-			const file = toUpload[i];
-			setUploadState({ current: file.name, index: i, total, fileProgress: 0 });
-			const err = await uploadFile(file);
+			const item = toUpload[i];
+			setUploadState({ current: item.relativePath, index: i, total, fileProgress: 0 });
+			const err = await uploadFile(item.file, item.relativePath);
 			if (err) errors.push(err);
 		}
 
@@ -1156,6 +1223,29 @@ export function FileBrowser() {
 		</div>
 	);
 
+	const [dragOver, setDragOver] = useState(false);
+	const dragCounter = useRef(0);
+
+	const onDragEnter = (e: React.DragEvent) => {
+		e.preventDefault();
+		dragCounter.current++;
+		if (dragCounter.current === 1) setDragOver(true);
+	};
+	const onDragLeave = (e: React.DragEvent) => {
+		e.preventDefault();
+		dragCounter.current--;
+		if (dragCounter.current === 0) setDragOver(false);
+	};
+	const onDragOver = (e: React.DragEvent) => {
+		e.preventDefault();
+	};
+	const onDrop = (e: React.DragEvent) => {
+		e.preventDefault();
+		dragCounter.current = 0;
+		setDragOver(false);
+		if (e.dataTransfer) handleDropUpload(e.dataTransfer);
+	};
+
 	const sortedEntries = useMemo(
 		() =>
 			!isFile && data
@@ -1181,7 +1271,13 @@ export function FileBrowser() {
 			{error && <div className="error-box">Error: {error}</div>}
 
 			<div className="flex-1">
-				<div className="datatable-wrapper">
+				<div
+					className={`datatable-wrapper${dragOver ? " drag-over" : ""}`}
+					onDragEnter={onDragEnter}
+					onDragLeave={onDragLeave}
+					onDragOver={onDragOver}
+					onDrop={onDrop}
+				>
 					<div className="file-list-header">
 						<div className="toolbar-group">
 							{selectMode ? (

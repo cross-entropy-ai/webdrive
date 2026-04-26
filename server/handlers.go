@@ -195,12 +195,31 @@ func (h *handler) upload(c *gin.Context) {
 		return
 	}
 
+	relativePaths := form.Value["relativePaths"]
+
 	var errs []string
-	for _, fh := range files {
-		name := filepath.Base(fh.Filename)
-		dst := filepath.Join(dirFull, name)
+	for i, fh := range files {
+		var relPath string
+		if i < len(relativePaths) && relativePaths[i] != "" {
+			relPath = filepath.Clean(relativePaths[i])
+		} else {
+			relPath = filepath.Base(fh.Filename)
+		}
+		// Prevent path traversal
+		if strings.HasPrefix(relPath, "..") || strings.Contains(relPath, "/../") || filepath.IsAbs(relPath) {
+			errs = append(errs, relPath+": invalid path")
+			continue
+		}
+		dst := filepath.Join(dirFull, relPath)
+		// Create parent directories if needed
+		if dir := filepath.Dir(dst); dir != dirFull {
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				errs = append(errs, relPath+": "+err.Error())
+				continue
+			}
+		}
 		if err := c.SaveUploadedFile(fh, dst); err != nil {
-			errs = append(errs, name+": "+err.Error())
+			errs = append(errs, relPath+": "+err.Error())
 		}
 	}
 	if len(errs) > 0 {

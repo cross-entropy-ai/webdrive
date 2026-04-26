@@ -379,6 +379,13 @@ body {
 	overflow: hidden;
 	background-color: var(--background);
 	border-radius: var(--radius);
+	transition: border-color 0.15s;
+}
+.datatable-wrapper.drag-over {
+	border-color: var(--accent);
+}
+.datatable-wrapper.drag-over .datatable-scroll {
+	pointer-events: none;
 }
 .datatable-header-bar {
 	padding: 0.375rem 0.75rem;
