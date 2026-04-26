@@ -84,9 +84,15 @@ func (h *handler) list(c *gin.Context) {
 		if err != nil {
 			continue
 		}
+		isDir := it.IsDir()
+		if fi.Mode()&os.ModeSymlink != 0 {
+			if target, err := os.Stat(filepath.Join(full, it.Name())); err == nil {
+				isDir = target.IsDir()
+			}
+		}
 		entries = append(entries, entry{
 			Name:    it.Name(),
-			IsDir:   it.IsDir(),
+			IsDir:   isDir,
 			Size:    fi.Size(),
 			ModTime: fi.ModTime(),
 		})
