@@ -7,7 +7,9 @@
 		"dev": "bun --hot src/index.ts",
 		"build": "bun build ./src/index.html --outdir=dist --target=browser --minify --define:process.env.NODE_ENV='\"production\"'",
 		"start": "NODE_ENV=production bun src/index.ts",
-		"fmt": "biome format --write ."
+		"fmt": "biome format --write .",
+		"typecheck": "tsc --noEmit",
+		"test": "bun test"
 	},
 	"dependencies": {
 		"@iconify/react": "^6.0.2",
@@ -28,6 +30,7 @@
 		"@biomejs/biome": "2.4.13",
 		"@types/bun": "latest",
 		"@types/react": "^19",
-		"@types/react-dom": "^19"
+		"@types/react-dom": "^19",
+		"typescript": "^5.9.3"
 	}
 }

@@ -13,7 +13,7 @@ NC     := \033[0m
 step    = printf "$(CYAN)➜ %s$(NC)\n" $(1)
 success = printf "$(GREEN)✓ %s$(NC)\n" $(1)
 
-.PHONY: all help deps fmt build build-ui build-server dev clean
+.PHONY: all help deps fmt test build build-ui build-server dev clean
 
 all: help
 
@@ -53,6 +53,11 @@ fmt: deps
 ## build: build the UI into ui/ui/dist, then compile the single binary
 build: build-ui build-server
 	@$(call success, "Successfully built $(BIN)")
+
+## test: run Go tests, frontend type checking, and frontend tests
+test:
+	@go test ./...
+	@cd $(UI_DIR) && bun run typecheck && bun test
 
 ## build-ui: build the React frontend into ui/ui/dist
 build-ui: deps

@@ -9,3 +9,16 @@ export function formatBytes(bytes: number): string {
 	}
 	return `${n.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
 }
+
+export function formatTime(iso: string): string {
+	const d = new Date(iso);
+	if (Number.isNaN(d.getTime())) return "";
+	return d.toLocaleString(undefined, {
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+		hour12: false,
+	});
+}

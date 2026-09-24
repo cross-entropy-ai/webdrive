@@ -22,6 +22,16 @@ func Run(cfg Config) error {
 	gin.SetMode(gin.ReleaseMode)
 	gin.ForceConsoleColor() // Ensure colors are output even in release mode
 
+	r := NewHandler(cfg)
+	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
+	logger.Success("Serving UI and API on http://%s", addr)
+	logger.Info("Root directory: %s", cfg.Root)
+	return r.Run(addr)
+}
+
+// NewHandler builds the HTTP routes without opening a listening socket.
+// The caller must supply an absolute directory path in cfg.Root.
+func NewHandler(cfg Config) *gin.Engine {
 	r := gin.New()
 	r.Use(logger.Middleware(), gin.Recovery())
 
@@ -42,10 +52,7 @@ func Run(cfg Config) error {
 	uiFS := ui.FS()
 	r.NoRoute(spaHandler(uiFS))
 
-	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
-	logger.Success("Serving UI and API on http://%s", addr)
-	logger.Info("Root directory: %s", cfg.Root)
-	return r.Run(addr)
+	return r
 }
 
 // spaHandler serves the embedded frontend, falling back to index.html for

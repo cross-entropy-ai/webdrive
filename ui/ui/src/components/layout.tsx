@@ -1,6 +1,7 @@
 import { Icon } from "@iconify/react";
 import { useTheme } from "next-themes";
 import { useEffect, useState, type ReactNode } from "react";
+import { requestJSON } from "../lib/api";
 
 function ThemeToggle() {
 	const { resolvedTheme, setTheme } = useTheme();
@@ -29,9 +30,8 @@ export function Layout({ children }: { children: ReactNode }) {
 	const [hostname, setHostname] = useState<string>("");
 
 	useEffect(() => {
-		fetch("/api/info")
-			.then((r) => r.json())
-			.then((d: { hostname: string }) => {
+		requestJSON<{ hostname: string }>("/api/info")
+			.then((d) => {
 				setHostname(d.hostname);
 				document.title = `Webdrive (${d.hostname})`;
 			})

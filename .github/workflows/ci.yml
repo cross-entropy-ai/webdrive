@@ -31,5 +31,5 @@ jobs:
       - name: Build
         run: make build
 
-      - name: Go tests
-        run: go test ./...
+      - name: Tests and type checking
+        run: make test
