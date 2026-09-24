@@ -1,8 +1,9 @@
 import { lazy, Suspense, useEffect, useState } from "react";
+import { Icon } from "../../components/icon";
 import { LoadingState } from "../../components/loading-state";
 import { downloadUrl, previewUrl, request } from "../../lib/api";
 import { CodePreview } from "./code-preview";
-import { previewKind, type PreviewKind } from "./file-types";
+import { previewKind, isTextFilename, type PreviewKind } from "./file-types";
 import { baseName } from "./path";
 import { readPreviewText } from "./preview-text";
 
@@ -35,7 +36,15 @@ export function FilePreview({ path }: { path: string }) {
 		setKind(initialKind);
 		// Native media elements stream and seek directly without buffering a full blob.
 		if (isMedia(initialKind)) return () => controller.abort();
-		void request(previewUrl(path), { signal: controller.signal })
+		if (initialKind === "binary") {
+			setLoading(false);
+			return () => controller.abort();
+		}
+		const inspectFirst = initialKind === "text" && !isTextFilename(path);
+		void request(previewUrl(path), {
+			signal: controller.signal,
+			method: inspectFirst ? "HEAD" : "GET",
+		})
 			.then(async (response) => {
 				const detected = previewKind(
 					path,
@@ -51,7 +60,10 @@ export function FilePreview({ path }: { path: string }) {
 					if (detected === "binary") setLoading(false);
 					return;
 				}
-				const result = await readPreviewText(response);
+				const textResponse = inspectFirst
+					? await request(previewUrl(path), { signal: controller.signal })
+					: response;
+				const result = await readPreviewText(textResponse);
 				if (!controller.signal.aborted) {
 					setContent(result.text);
 					setTruncated(result.truncated);
@@ -76,55 +88,57 @@ export function FilePreview({ path }: { path: string }) {
 	};
 	return (
 		<div className="file-preview">
-			<div className="preview-toolbar">
-				{richDocument && !truncated && (
-					<div className="preview-tabs" aria-label="Document view">
+			{kind !== "binary" && (
+				<div className="preview-toolbar">
+					{richDocument && !truncated && (
+						<div className="preview-tabs" aria-label="Document view">
+							<button
+								className="btn btn-ghost"
+								aria-pressed={!source}
+								onClick={() => setSource(false)}
+							>
+								Preview
+							</button>
+							<button
+								className="btn btn-ghost"
+								aria-pressed={source}
+								onClick={() => setSource(true)}
+							>
+								Source
+							</button>
+						</div>
+					)}
+					{content !== null && showSource && (
 						<button
 							className="btn btn-ghost"
-							aria-pressed={!source}
-							onClick={() => setSource(false)}
+							aria-pressed={wrap}
+							onClick={() => setWrap(!wrap)}
 						>
-							Preview
-						</button>
-						<button
-							className="btn btn-ghost"
-							aria-pressed={source}
-							onClick={() => setSource(true)}
-						>
-							Source
-						</button>
-					</div>
-				)}
-				{content !== null && showSource && (
-					<button
-						className="btn btn-ghost"
-						aria-pressed={wrap}
-						onClick={() => setWrap(!wrap)}
-					>
-						Wrap lines
-					</button>
-				)}
-				<div className="preview-toolbar-actions">
-					{content !== null && (
-						<button
-							className="btn btn-ghost"
-							onClick={async () => {
-								try {
-									await navigator.clipboard.writeText(content);
-									setCopyStatus("Copied");
-								} catch {
-									setCopyStatus("Copy unavailable");
-								}
-							}}
-						>
-							{copyStatus}
+							Wrap lines
 						</button>
 					)}
-					<a className="btn btn-ghost" href={downloadUrl(path)}>
-						Download
-					</a>
+					<div className="preview-toolbar-actions">
+						{content !== null && (
+							<button
+								className="btn btn-ghost"
+								onClick={async () => {
+									try {
+										await navigator.clipboard.writeText(content);
+										setCopyStatus("Copied");
+									} catch {
+										setCopyStatus("Copy unavailable");
+									}
+								}}
+							>
+								{copyStatus}
+							</button>
+						)}
+						<a className="btn btn-ghost" href={downloadUrl(path)}>
+							Download
+						</a>
+					</div>
 				</div>
-			</div>
+			)}
 			{truncated && (
 				<div className="preview-notice" role="status">
 					Showing the first 1 MB as text. Download the file to read it in full.
@@ -206,9 +220,26 @@ export function FilePreview({ path }: { path: string }) {
 						</div>
 					)}
 					{kind === "binary" && !loading && (
-						<div className="datatable-state">
-							Preview is unavailable for this file. Use Download to open it
-							locally.
+						<div className="empty-state download-state">
+							<div className="empty-state-icon">
+								<Icon icon="solar:archive-linear" width={36} />
+							</div>
+							<span className="download-file-type">
+								{baseName(path).includes(".")
+									? baseName(path).match(
+											/(?:tar\.)?(?:gz|bz2|xz|zst)$|[^.]+$/i,
+										)?.[0]
+									: "Binary file"}
+							</span>
+							<h2>Ready to download</h2>
+							<p>
+								This file can’t be previewed here. Download it to open with an
+								app on your device.
+							</p>
+							<a className="btn btn-primary" href={downloadUrl(path)}>
+								<Icon icon="solar:download-square-linear" width={18} />
+								Download file
+							</a>
 						</div>
 					)}
 				</>

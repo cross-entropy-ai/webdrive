@@ -1,6 +1,7 @@
 import { Icon } from "./icon";
 import { useTheme } from "next-themes";
 import { useEffect, useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { requestJSON } from "../lib/api";
 
 function ThemeToggle() {
@@ -20,7 +21,7 @@ function ThemeToggle() {
 		>
 			<Icon
 				icon={isDark ? "solar:sun-linear" : "solar:moon-linear"}
-				width={14}
+				width={19}
 			/>
 		</button>
 	);
@@ -42,11 +43,22 @@ export function Layout({ children }: { children: ReactNode }) {
 		<div className="layout-container">
 			<div className="layout-main">
 				<header className="chrome-bar">
-					<div className="flex items-center gap-2">
-						<span className="text-accent font-semibold">Webdrive</span>
-						<span className="text-xs text-muted">{hostname}</span>
+					<Link to="/" className="brand" aria-label="Webdrive home">
+						<span className="brand-mark">
+							<Icon icon="solar:folder-bold-duotone" width={23} />
+						</span>
+						<span>
+							webdrive<span className="brand-dot">.</span>
+						</span>
+					</Link>
+					<div className="chrome-actions">
+						<span className="host-badge" title={hostname}>
+							<span className="host-dot" />
+							{hostname || "Your workspace"}
+						</span>
+						<span className="chrome-divider" />
+						<ThemeToggle />
 					</div>
-					<ThemeToggle />
 				</header>
 				<main className="layout-content">{children}</main>
 			</div>

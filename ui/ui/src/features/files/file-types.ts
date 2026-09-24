@@ -101,6 +101,7 @@ export function fileIcon(name: string, isDir: boolean): string {
 	if (media === "image") return "solar:gallery-linear";
 	if (media === "video") return "solar:videocamera-linear";
 	if (media === "audio") return "solar:music-note-linear";
+	if (previewKind(name) === "binary") return "solar:archive-linear";
 	return "solar:document-text-linear";
 }
 
@@ -110,10 +111,99 @@ export function langFromFilename(name: string): string | undefined {
 	return languages[ext];
 }
 
+// Formats that cannot be usefully rendered in the browser. Never fetch their body
+// just to discover that the user needs to download them.
+const downloadOnlyExtensions = new Set([
+	"tar",
+	"zip",
+	"7z",
+	"rar",
+	"gz",
+	"tgz",
+	"bz2",
+	"tbz2",
+	"xz",
+	"txz",
+	"zst",
+	"lz",
+	"lzma",
+	"br",
+	"exe",
+	"dll",
+	"so",
+	"dylib",
+	"bin",
+	"iso",
+	"dmg",
+	"deb",
+	"rpm",
+	"apk",
+	"jar",
+	"war",
+	"wasm",
+	"db",
+	"sqlite",
+	"sqlite3",
+	"o",
+	"a",
+	"pyc",
+	"pkl",
+	"pickle",
+	"pt",
+	"pth",
+	"onnx",
+	"gguf",
+	"woff",
+	"woff2",
+	"ttf",
+	"otf",
+	"doc",
+	"docx",
+	"xls",
+	"xlsx",
+	"ppt",
+	"pptx",
+	"psd",
+	"sketch",
+]);
+
+export function isTextFilename(name: string): boolean {
+	const extension = name.split(".").pop()?.toLowerCase() ?? "";
+	return (
+		!!langFromFilename(name) ||
+		[
+			"txt",
+			"log",
+			"csv",
+			"tsv",
+			"conf",
+			"cfg",
+			"env",
+			"ini",
+			"mdx",
+			"rst",
+			"diff",
+			"patch",
+			"lock",
+			"sum",
+			"mod",
+			"jsonl",
+			"ndjson",
+			"gitignore",
+			"editorconfig",
+		].includes(extension)
+	);
+}
+
 export type PreviewKind = ReturnType<typeof mimeCategory> | "html" | "markdown";
 
 export function previewKind(name: string, contentType = ""): PreviewKind {
 	const extension = name.split(".").pop()?.toLowerCase();
+	if (
+		downloadOnlyExtensions.has(extension ?? "") ||
+		/\.so\.\d+(?:\.\d+)*$/i.test(name)
+	)
+		return "binary";
 	const mime = contentType.split(";", 1)[0]?.trim().toLowerCase();
 	if (extension === "html" || extension === "htm" || mime === "text/html")
 		return "html";

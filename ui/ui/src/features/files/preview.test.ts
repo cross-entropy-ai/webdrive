@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { documentUrl } from "./document-url";
-import { previewKind } from "./file-types";
+import { isTextFilename, previewKind } from "./file-types";
 import { readPreviewText } from "./preview-text";
 
 describe("document previews", () => {
@@ -81,4 +81,29 @@ describe("document previews", () => {
 			truncated: false,
 		});
 	});
+});
+
+test("archives and application binaries stay download-only regardless of MIME", () => {
+	for (const filename of [
+		"backup.tar",
+		"backup.tar.gz",
+		"archive.ZIP",
+		"data.7z",
+		"image.iso",
+		"app.exe",
+		"module.wasm",
+		"lib.so.1.2",
+		"database.sqlite3",
+		"model.gguf",
+		"slides.pptx",
+	]) {
+		expect(previewKind(filename)).toBe("binary");
+		expect(previewKind(filename, "text/plain")).toBe("binary");
+	}
+	expect(previewKind("README.md")).toBe("markdown");
+	expect(previewKind("document.pdf")).toBe("pdf");
+	expect(isTextFilename("project.ts")).toBe(true);
+	expect(isTextFilename("server.LOG")).toBe(true);
+	expect(isTextFilename("unknown.blob")).toBe(false);
+	expect(isTextFilename("no-extension")).toBe(false);
 });

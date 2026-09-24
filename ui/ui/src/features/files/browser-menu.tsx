@@ -44,13 +44,42 @@ export function BrowserMenu({
 				setMenuOpen(false);
 			}
 		};
+		const onKey = (event: KeyboardEvent) => {
+			if (event.key === "Escape") {
+				setMenuOpen(false);
+				menuRef.current?.querySelector("button")?.focus();
+			}
+			if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+				const items = Array.from(
+					menuRef.current?.querySelectorAll<HTMLElement>(".popup-item") ?? [],
+				);
+				const index = items.indexOf(document.activeElement as HTMLElement);
+				event.preventDefault();
+				items[
+					(index +
+						(event.key === "ArrowDown" ? 1 : items.length - 1) +
+						items.length) %
+						items.length
+				]?.focus();
+			}
+		};
 		document.addEventListener("mousedown", onClick);
-		return () => document.removeEventListener("mousedown", onClick);
+		document.addEventListener("keydown", onKey);
+		return () => {
+			document.removeEventListener("mousedown", onClick);
+			document.removeEventListener("keydown", onKey);
+		};
 	}, [menuOpen]);
 
 	return (
 		<div className="popup-anchor" ref={menuRef}>
-			<Button variant="ghost" onClick={() => setMenuOpen(!menuOpen)}>
+			<Button
+				variant="ghost"
+				aria-label="More actions"
+				title="More actions"
+				aria-expanded={menuOpen}
+				onClick={() => setMenuOpen(!menuOpen)}
+			>
 				<Icon icon="solar:menu-dots-bold" width={15} />
 			</Button>
 			{menuOpen && (

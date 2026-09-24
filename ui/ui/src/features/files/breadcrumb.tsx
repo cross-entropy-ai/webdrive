@@ -29,13 +29,15 @@ export function Breadcrumb({
 
 	return (
 		<>
-			<nav className="breadcrumb">
+			<nav className="breadcrumb" aria-label="Breadcrumb">
 				<button
 					type="button"
+					aria-label="All files"
 					className={`breadcrumb-seg${path === "/" ? " current" : ""}`}
 					onClick={path === "/" ? undefined : () => onNavigate("/")}
 				>
-					<Icon icon="solar:folder-path-connect-linear" width={13} />
+					<Icon icon="solar:home-linear" width={16} />
+					<span>All files</span>
 				</button>
 
 				{showEllipsis && (
@@ -59,7 +61,11 @@ export function Breadcrumb({
 							/
 						</span>,
 						isCurrent ? (
-							<span key={segPath} className="breadcrumb-seg current">
+							<span
+								key={segPath}
+								className="breadcrumb-seg current"
+								aria-current="page"
+							>
 								{name}
 							</span>
 						) : (

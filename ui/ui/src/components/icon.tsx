@@ -26,7 +26,15 @@ import uploadSquareLinear from "@iconify-icons/solar/upload-square-linear";
 import videocameraLinear from "@iconify-icons/solar/videocamera-linear";
 import widgetLinear from "@iconify-icons/solar/widget-linear";
 
+import searchLinear from "@iconify-icons/solar/minimalistic-magnifer-linear";
+import refreshLinear from "@iconify-icons/solar/refresh-linear";
+
+import archiveLinear from "@iconify-icons/solar/archive-linear";
+
 const icons: Record<string, IconProps["icon"]> = {
+	"solar:archive-linear": archiveLinear,
+	"solar:minimalistic-magnifer-linear": searchLinear,
+	"solar:refresh-linear": refreshLinear,
 	"solar:add-folder-linear": addFolderLinear,
 	"solar:alt-arrow-left-linear": altArrowLeftLinear,
 	"solar:alt-arrow-right-linear": altArrowRightLinear,

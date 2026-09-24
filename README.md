@@ -43,7 +43,9 @@ a nested directory. Reverse proxies that strip a path prefix are also supported.
 
 ## Features
 
-- List and gallery view modes
+- Modern light/dark interface with comfortable spacing and responsive list/gallery views
+- Search the current folder (`/` to focus, `Esc` to clear), sortable columns, and saved view/sort preferences
+- Visible upload/new-folder actions and keyboard-friendly dialogs
 - Rendered HTML and Markdown previews, with a source view, copy, and line wrapping
 - Text/code previews with on-demand syntax highlighting; images, streaming video/audio, and PDF
 - Local images and relative document links work behind code-server's port proxy
@@ -58,6 +60,9 @@ a nested directory. Reverse proxies that strip a path prefix are also supported.
 HTML previews display static content in a sandbox with scripts disabled. Markdown
 supports tables, task lists, and fenced code blocks. Text previews show up to 1 MB
 to keep large logs responsive; the full file is always available to download.
+Archives (including tar/zip), executables, and other known binary formats show a
+download prompt without fetching file contents. Unknown formats are checked with
+a HEAD request before loading any preview content.
 
 ## Development
 

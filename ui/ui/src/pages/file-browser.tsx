@@ -8,16 +8,18 @@ import { filesApi } from "../features/files/api";
 import { Breadcrumb } from "../features/files/breadcrumb";
 import { BrowserMenu } from "../features/files/browser-menu";
 import { LoadingState } from "../components/loading-state";
-import { fileIcon } from "../features/files/file-types";
+import { FileColumns, FileList } from "../features/files/file-list";
+import { EmptyFolder } from "../features/files/empty-folder";
 import { GalleryView, ZOOM_MIN } from "../features/files/gallery-view";
 import { PreviewBoundary } from "../features/files/preview-boundary";
 import { baseName, joinPath, parentOf } from "../features/files/path";
 import { sortEntries } from "../features/files/sort";
-import type { SortDirection, SortKey, ViewMode } from "../features/files/types";
+import { useBrowserPreferences } from "../features/files/use-browser-preferences";
+import type { SortKey } from "../features/files/types";
 import { useDirectory } from "../features/files/use-directory";
 import { useFileUpload } from "../features/files/use-file-upload";
 import { downloadUrl, errorMessage } from "../lib/api";
-import { formatBytes, formatTime } from "../lib/format";
+
 import "./file-browser.css";
 
 const FilePreview = lazy(() =>
@@ -53,14 +55,15 @@ export function FileBrowser() {
 		refresh: refreshListing,
 	} = useDirectory(path);
 
-	const [sortKey, setSortKey] = useState<SortKey>("name");
-	const [sortDir, setSortDir] = useState<SortDirection>("asc");
+	const { viewMode, setViewMode, sortKey, setSortKey, sortDir, setSortDir } =
+		useBrowserPreferences();
+	const [query, setQuery] = useState("");
+	const searchRef = useRef<HTMLInputElement>(null);
 
 	const [newFolderOpen, setNewFolderOpen] = useState(false);
 	const [renameOpen, setRenameOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [deleting, setDeleting] = useState(false);
-	const [viewMode, setViewMode] = useState<ViewMode>("list");
 	const [galleryCols, setGalleryCols] = useState(5);
 	const [zoomMax, setZoomMax] = useState(8);
 
@@ -80,10 +83,10 @@ export function FileBrowser() {
 
 	const toggleSelectAll = () => {
 		if (!data) return;
-		if (selected.size === data.entries.length) {
+		if (selected.size === sortedEntries.length) {
 			setSelected(new Set());
 		} else {
-			setSelected(new Set(data.entries.map((e) => e.name)));
+			setSelected(new Set(sortedEntries.map((e) => e.name)));
 		}
 	};
 
@@ -118,7 +121,38 @@ export function FileBrowser() {
 	useEffect(() => {
 		setSelectMode(false);
 		setSelected(new Set());
+		setQuery("");
 	}, [path]);
+
+	useEffect(() => {
+		setSelected(new Set());
+	}, [query]);
+	useEffect(() => {
+		const onKey = (event: KeyboardEvent) => {
+			const target = event.target as HTMLElement;
+			if (
+				document.querySelector("dialog[open], .carousel-overlay") ||
+				target.closest("input,textarea,select,[contenteditable=true]")
+			)
+				return;
+			if (
+				event.key === "/" &&
+				!event.metaKey &&
+				!event.ctrlKey &&
+				!event.altKey &&
+				!isFile
+			) {
+				event.preventDefault();
+				searchRef.current?.focus();
+			}
+			if (event.key === "Escape") {
+				setSelectMode(false);
+				setSelected(new Set());
+			}
+		};
+		document.addEventListener("keydown", onKey);
+		return () => document.removeEventListener("keydown", onKey);
+	}, [isFile]);
 
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const {
@@ -129,7 +163,7 @@ export function FileBrowser() {
 		resolveConflict,
 		handleUpload,
 		handleDropUpload,
-	} = useFileUpload(path, refreshListing, setError);
+	} = useFileUpload(isFile ? parentOf(path) : path, refreshListing, setError);
 
 	const handleNewFolder = async (name: string) => {
 		await filesApi.mkdir(path, name);
@@ -168,12 +202,13 @@ export function FileBrowser() {
 
 	const onDragEnter = (e: React.DragEvent) => {
 		e.preventDefault();
+		if (!e.dataTransfer.types.includes("Files")) return;
 		dragCounter.current++;
 		if (dragCounter.current === 1) setDragOver(true);
 	};
 	const onDragLeave = (e: React.DragEvent) => {
 		e.preventDefault();
-		dragCounter.current--;
+		dragCounter.current = Math.max(0, dragCounter.current - 1);
 		if (dragCounter.current === 0) setDragOver(false);
 	};
 	const onDragOver = (e: React.DragEvent) => {
@@ -187,24 +222,92 @@ export function FileBrowser() {
 	};
 
 	const sortedEntries = useMemo(
-		() => (!isFile && data ? sortEntries(data.entries, sortKey, sortDir) : []),
-		[data, isFile, sortKey, sortDir],
+		() =>
+			!isFile && data
+				? sortEntries(
+						data.entries.filter((entry) =>
+							entry.name
+								.toLocaleLowerCase()
+								.includes(query.trim().toLocaleLowerCase()),
+						),
+						sortKey,
+						sortDir,
+					)
+				: [],
+		[data, isFile, sortKey, sortDir, query],
 	);
 
 	return (
 		<div className="page-shell animate-fadeUp">
 			<Breadcrumb path={path} onNavigate={navigate} />
+			<section className="browser-heading">
+				<div className="browser-heading-copy">
+					<div className="eyebrow">
+						{isFile ? "FILE PREVIEW" : "YOUR WORKSPACE"}
+					</div>
+					<h1 title={path === "/" ? "All files" : baseName(path)}>
+						{path === "/" ? "All files" : baseName(path)}
+					</h1>
+					<p>
+						{isFile
+							? "A closer look, without leaving your workspace."
+							: loading && !data
+								? "Getting your files ready…"
+								: `${data?.entries.filter((entry) => entry.is_dir).length ?? 0} folders · ${data?.entries.filter((entry) => !entry.is_dir).length ?? 0} files`}
+					</p>
+				</div>
+				{!isFile && (
+					<div className="heading-actions">
+						<Button
+							onClick={() => setNewFolderOpen(true)}
+							aria-label="Create folder"
+						>
+							<Icon icon="solar:add-folder-linear" width={18} />
+							<span>New folder</span>
+						</Button>
+						<Button
+							variant="primary"
+							onClick={() => fileInputRef.current?.click()}
+							aria-label="Upload files"
+						>
+							<Icon icon="solar:upload-square-linear" width={18} />
+							<span>Upload files</span>
+						</Button>
+					</div>
+				)}
+			</section>
 
-			{error && <div className="error-box">Error: {error}</div>}
+			{error && (
+				<div className="error-box" role="alert">
+					<span>{error}</span>
+					<Button
+						variant="ghost"
+						onClick={() => {
+							setError(null);
+							void refreshListing();
+						}}
+					>
+						Try again
+					</Button>
+				</div>
+			)}
 
 			<div className="flex-1">
 				<div
 					className={`datatable-wrapper${dragOver ? " drag-over" : ""}`}
+					aria-busy={loading}
 					onDragEnter={onDragEnter}
 					onDragLeave={onDragLeave}
 					onDragOver={onDragOver}
 					onDrop={onDrop}
 				>
+					{dragOver && (
+						<div className="drop-overlay">
+							<Icon icon="solar:upload-square-linear" width={40} />
+							<strong>Drop to upload</strong>
+							<span>Your files will be added to this folder</span>
+						</div>
+					)}
 					<div className="file-list-header">
 						<div className="toolbar-group">
 							{selectMode ? (
@@ -214,15 +317,16 @@ export function FileBrowser() {
 										className="select-checkbox"
 										checked={
 											!!data &&
-											data.entries.length > 0 &&
-											selected.size === data.entries.length
+											sortedEntries.length > 0 &&
+											selected.size === sortedEntries.length
 										}
 										ref={(el) => {
 											if (el)
 												el.indeterminate =
 													selected.size > 0 &&
-													(!data || selected.size < data.entries.length);
+													(!data || selected.size < sortedEntries.length);
 										}}
+										aria-label="Select all visible files"
 										onChange={toggleSelectAll}
 									/>
 									<span className="select-action-count">
@@ -230,11 +334,18 @@ export function FileBrowser() {
 									</span>
 									{selected.size > 0 && (
 										<>
-											<Button variant="ghost" onClick={handleBatchDownload}>
+											<Button
+												variant="ghost"
+												aria-label="Download selected"
+												title="Download selected"
+												onClick={handleBatchDownload}
+											>
 												<Icon icon="solar:download-square-linear" width={15} />
 											</Button>
 											<Button
 												variant="danger"
+												aria-label="Delete selected"
+												title="Delete selected"
 												onClick={() => setBatchDeleteOpen(true)}
 											>
 												<Icon icon="solar:trash-bin-2-linear" width={15} />
@@ -246,17 +357,86 @@ export function FileBrowser() {
 								path !== "/" && (
 									<Button
 										variant="ghost"
+										aria-label="Parent folder"
+										title="Parent folder"
 										onClick={() => navigate(parentOf(path))}
 									>
 										<Icon icon="solar:arrow-left-linear" width={15} />
+										{isFile && <span>Back to folder</span>}
 									</Button>
 								)
 							)}
+							{!isFile && !selectMode && (
+								<div className="file-search">
+									<Icon icon="solar:minimalistic-magnifer-linear" width={18} />
+									<input
+										ref={searchRef}
+										type="search"
+										aria-label="Search this folder"
+										placeholder="Search this folder…"
+										value={query}
+										onChange={(event) => setQuery(event.target.value)}
+										onKeyDown={(event) => {
+											if (event.key === "Escape") {
+												setQuery("");
+												searchRef.current?.blur();
+											}
+										}}
+									/>
+									{query ? (
+										<button
+											className="icon-btn"
+											aria-label="Clear search"
+											onClick={() => {
+												setQuery("");
+												searchRef.current?.focus();
+											}}
+										>
+											<Icon icon="solar:close-circle-linear" width={16} />
+										</button>
+									) : (
+										<kbd>/</kbd>
+									)}
+								</div>
+							)}
 						</div>
-						<div className="toolbar-group">
+						<div className="toolbar-group toolbar-end">
+							{!isFile && !selectMode && (
+								<>
+									<Button
+										className="refresh-button"
+										variant="ghost"
+										aria-label="Refresh folder"
+										title="Refresh folder"
+										disabled={loading}
+										onClick={() => void refreshListing()}
+									>
+										<Icon icon="solar:refresh-linear" width={17} />
+									</Button>
+									<div className="view-switch" aria-label="View mode">
+										<button
+											aria-label="List view"
+											title="List view"
+											aria-pressed={viewMode === "list"}
+											onClick={() => setViewMode("list")}
+										>
+											<Icon icon="solar:list-linear" width={18} />
+										</button>
+										<button
+											aria-label="Gallery view"
+											title="Gallery view"
+											aria-pressed={viewMode === "gallery"}
+											onClick={() => setViewMode("gallery")}
+										>
+											<Icon icon="solar:widget-linear" width={18} />
+										</button>
+									</div>
+								</>
+							)}
 							{!isFile && viewMode === "gallery" && (
 								<input
 									type="range"
+									aria-label="Thumbnail size"
 									className="zoom-slider"
 									min={ZOOM_MIN}
 									max={zoomMax}
@@ -267,7 +447,11 @@ export function FileBrowser() {
 								/>
 							)}
 							{selectMode ? (
-								<Button variant="ghost" onClick={exitSelectMode}>
+								<Button
+									variant="ghost"
+									aria-label="Cancel selection"
+									onClick={exitSelectMode}
+								>
 									<Icon icon="solar:close-circle-linear" width={15} />
 								</Button>
 							) : (
@@ -316,7 +500,15 @@ export function FileBrowser() {
 							);
 						})()}
 
-					<div className="datatable-scroll">
+					{!isFile && viewMode === "list" && sortedEntries.length > 0 && (
+						<FileColumns
+							selecting={selectMode}
+							sortKey={sortKey}
+							sortDir={sortDir}
+							onSort={toggleSort}
+						/>
+					)}
+					<div className="datatable-scroll" key={path}>
 						{isFile ? (
 							<PreviewBoundary key={path} path={path}>
 								<Suspense fallback={<LoadingState label="Loading preview…" />}>
@@ -325,68 +517,49 @@ export function FileBrowser() {
 							</PreviewBoundary>
 						) : loading && !data ? (
 							<LoadingState label="Loading files…" />
-						) : viewMode === "gallery" ? (
-							sortedEntries.length === 0 ? (
-								<div className="datatable-state">Empty directory.</div>
-							) : (
-								<GalleryView
-									key={path}
-									entries={sortedEntries}
-									dirPath={path}
-									onNavigate={navigate}
-									cols={galleryCols}
-									onColsChange={setGalleryCols}
-									onZoomMaxChange={setZoomMax}
-									selectMode={selectMode}
-									selected={selected}
-									onToggleSelect={toggleSelect}
-								/>
-							)
 						) : sortedEntries.length === 0 ? (
-							<div className="datatable-state">Empty directory.</div>
+							<EmptyFolder
+								filtered={!!query.trim()}
+								onClear={() => setQuery("")}
+								onUpload={() => fileInputRef.current?.click()}
+							/>
+						) : viewMode === "gallery" ? (
+							<GalleryView
+								key={path}
+								entries={sortedEntries}
+								dirPath={path}
+								onNavigate={navigate}
+								cols={galleryCols}
+								onColsChange={setGalleryCols}
+								onZoomMaxChange={setZoomMax}
+								selectMode={selectMode}
+								selected={selected}
+								onToggleSelect={toggleSelect}
+							/>
 						) : (
-							<div className="file-list">
-								{sortedEntries.map((entry) => (
-									<button
-										key={entry.name}
-										type="button"
-										className={`file-list-item${selectMode && selected.has(entry.name) ? " selected" : ""}`}
-										onClick={() =>
-											selectMode
-												? toggleSelect(entry.name)
-												: navigate(joinPath(path, entry.name))
-										}
-									>
-										{selectMode && (
-											<input
-												type="checkbox"
-												className="select-checkbox"
-												checked={selected.has(entry.name)}
-												readOnly
-											/>
-										)}
-										<Icon
-											icon={
-												entry.is_dir
-													? "solar:folder-bold-duotone"
-													: fileIcon(entry.name, false)
-											}
-											width={22}
-											className={entry.is_dir ? "text-accent" : "text-muted"}
-										/>
-										<div className="file-list-info">
-											<span className="file-list-name">{entry.name}</span>
-											<span className="file-list-meta">
-												{entry.mod_time && formatTime(entry.mod_time)}
-												{!entry.is_dir && entry.mod_time && " · "}
-												{!entry.is_dir && formatBytes(entry.size)}
-											</span>
-										</div>
-									</button>
-								))}
-							</div>
+							<FileList
+								entries={sortedEntries}
+								path={path}
+								selectMode={selectMode}
+								selected={selected}
+								onSelect={toggleSelect}
+								onNavigate={navigate}
+							/>
 						)}
 					</div>
+					{!isFile && (
+						<footer className="browser-status">
+							<span aria-live="polite">
+								{selected.size
+									? `${selected.size} selected`
+									: `${sortedEntries.length}${query ? ` of ${data?.entries.length ?? 0}` : ""} items`}
+							</span>
+							<span className="status-hint">Drop files anywhere to upload</span>
+							<span className="status-mobile">
+								{viewMode === "list" ? "List view" : "Gallery view"}
+							</span>
+						</footer>
+					)}
 				</div>
 			</div>
 

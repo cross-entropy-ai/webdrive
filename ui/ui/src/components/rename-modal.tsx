@@ -56,6 +56,10 @@ export function RenameModal({
 					}}
 				>
 					<Input
+						aria-label={title === "New Folder" ? "Folder name" : "File name"}
+						placeholder={
+							title === "New Folder" ? "Untitled folder" : "Enter a name"
+						}
 						value={name}
 						onChange={(e) => setName(e.target.value)}
 						autoFocus

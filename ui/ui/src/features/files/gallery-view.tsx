@@ -1,5 +1,5 @@
 import { Icon } from "../../components/icon";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { previewUrl } from "../../lib/api";
 import { Carousel } from "./carousel";
 import { fileIcon, mediaTypeFromName } from "./file-types";
@@ -7,7 +7,7 @@ import { joinPath } from "./path";
 import type { Entry } from "./types";
 
 export const ZOOM_MIN = 1;
-const TILE_MIN_PX = 180;
+const TILE_MIN_PX = 150;
 
 export function GalleryView({
 	entries,
@@ -40,15 +40,18 @@ export function GalleryView({
 	onColsChangeRef.current = onColsChange;
 	onZoomMaxChangeRef.current = onZoomMaxChange;
 
-	const maxRef = useRef(ZOOM_MIN);
+	const maxRef = useRef(0);
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		const el = gridRef.current;
 		if (!el) return;
 
 		const updateMax = () => {
 			if (!el.clientWidth) return;
-			const max = Math.max(ZOOM_MIN, Math.floor(el.clientWidth / TILE_MIN_PX));
+			const max = Math.max(
+				ZOOM_MIN,
+				Math.floor((el.clientWidth - 24) / (TILE_MIN_PX + 12)),
+			);
 			if (max === maxRef.current) return;
 			maxRef.current = max;
 			onZoomMaxChangeRef.current(max);
@@ -153,14 +156,16 @@ export function GalleryView({
 										: onNavigate(fullPath)
 							}
 							title={entry.name}
+							aria-label={entry.name}
+							aria-pressed={selectMode ? !!isSelected : undefined}
 						>
 							{selectMode && (
-								<input
-									type="checkbox"
-									className="gallery-select-checkbox"
-									checked={!!isSelected}
-									readOnly
-								/>
+								<span
+									className={`gallery-selection selection-mark${isSelected ? " checked" : ""}`}
+									aria-hidden="true"
+								>
+									{isSelected && "✓"}
+								</span>
 							)}
 							{isPreviewable ? (
 								<>
