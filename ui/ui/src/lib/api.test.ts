@@ -146,6 +146,29 @@ for (const prefix of ["/", "/proxy/9090/", "/code/proxy/9090/", "/files/"]) {
 			`${prefix}api/fs/list?path=%2Fdocs`,
 		);
 
+		const controller = new AbortController();
+		fetchSpy.mockResolvedValueOnce(
+			Response.json({ entries: [], has_more: false, partial: false }),
+		);
+		await filesApi.search("/docs/你好 #?%", "f/b #?%", controller.signal);
+		const search = new URL(
+			fetchSpy.mock.calls.at(-1)?.[0] as string,
+			"https://example.com",
+		);
+		expect(search.pathname).toBe(`${prefix}api/fs/search`);
+		expect(search.searchParams.get("path")).toBe("/docs/你好 #?%");
+		expect(search.searchParams.get("q")).toBe("f/b #?%");
+		expect(fetchSpy.mock.calls.at(-1)?.[1]?.signal).toBe(controller.signal);
+		fetchSpy.mockResolvedValueOnce(
+			new Response(
+				'{"entries":[],"done":true,"has_more":false,"partial":false}\n',
+			),
+		);
+		await filesApi.searchProgress("/docs", "f b", controller.signal, () => {});
+		expect(fetchSpy.mock.calls.at(-1)?.[0]).toBe(
+			`${prefix}api/fs/search?path=%2Fdocs&q=f%20b&stream=1`,
+		);
+
 		fetchSpy.mockResolvedValueOnce(Response.json({ ok: true }));
 		await filesApi.mkdir("/docs", "new");
 		expect(fetchSpy.mock.calls.at(-1)?.[0]).toBe(`${prefix}api/fs/mkdir`);

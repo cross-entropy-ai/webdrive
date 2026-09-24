@@ -21,6 +21,7 @@ export type BrowserMenuProps = {
 	sortKey: SortKey;
 	sortDir: SortDirection;
 	toggleSort: (key: SortKey) => void;
+	onFind: () => void;
 	onSelect: () => void;
 	onNewFolder: () => void;
 	onUpload: () => void;
@@ -37,6 +38,7 @@ export function BrowserMenu({
 	sortKey,
 	sortDir,
 	toggleSort,
+	onFind,
 	onSelect,
 	onNewFolder,
 	onUpload,
@@ -131,6 +133,18 @@ export function BrowserMenu({
 			{menuOpen &&
 				createPortal(
 					<div className="popup-menu" ref={popupRef} style={position}>
+						<button
+							type="button"
+							className="popup-item"
+							onClick={() => {
+								setMenuOpen(false);
+								onFind();
+							}}
+						>
+							<Icon icon="solar:minimalistic-magnifer-linear" width={14} />
+							Find in subfolders <kbd style={{ marginLeft: "auto" }}>f</kbd>
+						</button>
+						<div className="popup-divider" />
 						{previewOptions}
 						{previewOptions && <div className="popup-divider" />}
 						{!isFile && (

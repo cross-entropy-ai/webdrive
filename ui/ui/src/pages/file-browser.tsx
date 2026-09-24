@@ -1,5 +1,13 @@
 import { Icon } from "../components/icon";
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import {
+	lazy,
+	Suspense,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../components/button";
 import { Modal } from "../components/modal";
@@ -13,6 +21,7 @@ import { EmptyFolder } from "../features/files/empty-folder";
 import { GalleryView, ZOOM_MIN } from "../features/files/gallery-view";
 import { PreviewBoundary } from "../features/files/preview-boundary";
 import { baseName, joinPath, parentOf } from "../features/files/path";
+import { FileFinder } from "../features/files/file-finder";
 import { fuzzyEntries } from "../features/files/fuzzy-search";
 import { sortEntries } from "../features/files/sort";
 import { useBrowserPreferences } from "../features/files/use-browser-preferences";
@@ -35,7 +44,7 @@ export function FileBrowser() {
 
 	const path = decodeURIComponent(location.pathname) || "/";
 
-	const navigate = (p: string) => {
+	const navigate = (p: string, knownKind?: "file" | "directory") => {
 		const entry = data?.entries.find(
 			(entry) => joinPath(path, entry.name) === p,
 		);
@@ -55,7 +64,7 @@ export function FileBrowser() {
 			.split("/")
 			.map((seg) => encodeURIComponent(seg))
 			.join("/");
-		routerNavigate(encoded, { state: { entryKind: kind } });
+		routerNavigate(encoded, { state: { entryKind: knownKind ?? kind } });
 	};
 
 	const {
@@ -77,7 +86,9 @@ export function FileBrowser() {
 	const { viewMode, setViewMode, sortKey, setSortKey, sortDir, setSortDir } =
 		useBrowserPreferences();
 	const [query, setQuery] = useState("");
+	const [finderPath, setFinderPath] = useState<string | null>(null);
 	const searchRef = useRef<HTMLInputElement>(null);
+	const searchFocusPending = useRef(false);
 
 	const [newFolderOpen, setNewFolderOpen] = useState(false);
 	const [renameOpen, setRenameOpen] = useState(false);
@@ -90,6 +101,13 @@ export function FileBrowser() {
 	const [selected, setSelected] = useState<Set<string>>(new Set());
 	const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
 	const [batchDeleting, setBatchDeleting] = useState(false);
+	useLayoutEffect(() => {
+		if (!selectMode && searchFocusPending.current) {
+			searchFocusPending.current = false;
+			searchRef.current?.focus();
+			searchRef.current?.select();
+		}
+	}, [selectMode]);
 
 	const toggleSelect = (name: string) => {
 		setSelected((prev) => {
@@ -141,6 +159,7 @@ export function FileBrowser() {
 		setSelectMode(false);
 		setSelected(new Set());
 		setQuery("");
+		setFinderPath((current) => (current === path ? current : null));
 	}, [path]);
 
 	useEffect(() => {
@@ -150,8 +169,13 @@ export function FileBrowser() {
 		const onKey = (event: KeyboardEvent) => {
 			const target = event.target as HTMLElement;
 			if (
-				document.querySelector("dialog[open], .carousel-overlay") ||
-				target.closest("input,textarea,select,[contenteditable=true]")
+				event.defaultPrevented ||
+				document.querySelector(
+					"dialog[open], .carousel-overlay, .popup-menu",
+				) ||
+				target.closest(
+					'input,textarea,select,[contenteditable]:not([contenteditable="false"])',
+				)
 			)
 				return;
 			if (
@@ -159,12 +183,24 @@ export function FileBrowser() {
 				!event.metaKey &&
 				!event.ctrlKey &&
 				!event.altKey &&
-				!event.isComposing &&
-				!isFile
+				!event.isComposing
 			) {
-				event.preventDefault();
-				searchRef.current?.focus();
-				searchRef.current?.select();
+				if (event.key.toLowerCase() === "f") {
+					event.preventDefault();
+					searchFocusPending.current = false;
+					setFinderPath(path);
+				} else if (!isFile) {
+					event.preventDefault();
+					setSelectMode(false);
+					setSelected(new Set());
+					if (searchRef.current) {
+						searchRef.current.focus();
+						searchRef.current.select();
+					} else {
+						// Selection mode remounts the input; focus before the next paint.
+						searchFocusPending.current = true;
+					}
+				}
 			}
 			if (event.key === "Escape") {
 				setSelectMode(false);
@@ -173,7 +209,7 @@ export function FileBrowser() {
 		};
 		document.addEventListener("keydown", onKey);
 		return () => document.removeEventListener("keydown", onKey);
-	}, [isFile]);
+	}, [isFile, path]);
 
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const {
@@ -258,6 +294,7 @@ export function FileBrowser() {
 			sortKey={sortKey}
 			sortDir={sortDir}
 			toggleSort={toggleSort}
+			onFind={() => setFinderPath(path)}
 			onSelect={() => setSelectMode(true)}
 			onNewFolder={() => setNewFolderOpen(true)}
 			onUpload={() => fileInputRef.current?.click()}
@@ -425,8 +462,8 @@ export function FileBrowser() {
 											ref={searchRef}
 											type="search"
 											aria-label="Search this folder"
-											placeholder="Fuzzy find files…"
-											title="Match filename characters in order. Press f or / to focus, Enter to open the best match."
+											placeholder="Filter this folder…"
+											title="Match filename characters in order. Press / to filter this folder, Enter to open the best match."
 											value={query}
 											onChange={(event) => setQuery(event.target.value)}
 											onKeyDown={(event) => {
@@ -461,7 +498,7 @@ export function FileBrowser() {
 												<Icon icon="solar:close-circle-linear" width={16} />
 											</button>
 										) : (
-											<kbd>f</kbd>
+											<kbd>/</kbd>
 										)}
 									</div>
 								)}
@@ -531,6 +568,7 @@ export function FileBrowser() {
 										sortKey={sortKey}
 										sortDir={sortDir}
 										toggleSort={toggleSort}
+										onFind={() => setFinderPath(path)}
 										onSelect={() => setSelectMode(true)}
 										onNewFolder={() => setNewFolderOpen(true)}
 										onUpload={() => fileInputRef.current?.click()}
@@ -652,7 +690,7 @@ export function FileBrowser() {
 								? "Text options in ···"
 								: query.trim()
 									? "Best matches first · Enter to open"
-									: "f to find files · Drop files to upload"}
+									: "/ filter folder · f find in subfolders"}
 						</span>
 						<span className="status-mobile">
 							{isFile
@@ -677,6 +715,18 @@ export function FileBrowser() {
 					}
 				}}
 			/>
+
+			{finderPath === path && (
+				<FileFinder
+					key={isFile ? parentOf(path) : path}
+					path={isFile ? parentOf(path) : path}
+					onClose={() => setFinderPath(null)}
+					onOpen={(entry) => {
+						setFinderPath(null);
+						navigate(entry.path, entry.is_dir ? "directory" : "file");
+					}}
+				/>
+			)}
 
 			<Modal
 				open={conflictFile !== null}

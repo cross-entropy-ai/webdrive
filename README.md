@@ -44,7 +44,8 @@ a nested directory. Reverse proxies that strip a path prefix are also supported.
 ## Features
 
 - Modern light/dark interface with comfortable spacing and responsive list/gallery views
-- Fuzzy filename search in the current folder (`f` or `/` to focus, `Enter` to open the best match, `Esc` to clear), with ranked results and highlighted matches
+- `/` filters filenames in the current folder (`Enter` opens the best match, `Esc` clears)
+- `f` opens a compact fuzzy finder across the current folder and all subfolders; match filenames or relative paths, use ↑/↓ to select, `Enter` to open, and `Esc` to close. Also available under `…` → Find in subfolders; from a file preview it searches the containing folder. Results show paths and highlighted matches.
 - Stable header heights across navigation and view changes, sortable columns, and saved browsing preferences
 - Visible upload/new-folder actions and keyboard-friendly dialogs
 - Rendered HTML and Markdown previews, with a source view, copy, and line wrapping
@@ -65,6 +66,12 @@ to keep large logs responsive; the full file is always available to download.
 Archives (including tar/zip), executables, and other known binary formats show a
 download prompt without fetching file contents. Unknown formats are checked with
 a HEAD request before loading any preview content.
+
+Recursive search streams matches asynchronously as it scans, cancels outdated
+queries, reads filenames only, includes hidden folders, and does not follow
+symlinks. It returns the best 100 matches; if a scan times out or cannot read some
+folders, the finder marks results as partial. Narrow the query or search folder
+for large trees.
 
 ## Development
 

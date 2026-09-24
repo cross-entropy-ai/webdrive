@@ -4,9 +4,10 @@ interface ModalProps {
 	open: boolean;
 	onClose: () => void;
 	children: ReactNode;
+	className?: string;
 }
 
-export function Modal({ open, onClose, children }: ModalProps) {
+export function Modal({ open, onClose, children, className = "" }: ModalProps) {
 	const ref = useRef<HTMLDialogElement>(null);
 	useEffect(() => {
 		const dialog = ref.current;
@@ -24,14 +25,17 @@ export function Modal({ open, onClose, children }: ModalProps) {
 	return (
 		<dialog
 			ref={ref}
-			className="modal-root"
+			className={`modal-root ${className}`}
 			onKeyDown={(event) => {
 				if (event.key !== "Tab") return;
 				const controls = Array.from(
 					event.currentTarget.querySelectorAll<HTMLElement>(
 						'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex="0"]',
 					),
-				).filter((control) => control.getClientRects().length > 0);
+				).filter(
+					(control) =>
+						control.tabIndex >= 0 && control.getClientRects().length > 0,
+				);
 				const first = controls[0];
 				const last = controls.at(-1);
 				if (event.shiftKey && document.activeElement === first) {

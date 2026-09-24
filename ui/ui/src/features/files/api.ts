@@ -1,8 +1,63 @@
-import { ApiError, postJSON, requestJSON, responseError } from "../../lib/api";
+import {
+	ApiError,
+	postJSON,
+	request,
+	requestJSON,
+	responseError,
+} from "../../lib/api";
 import { appUrl } from "../../lib/app-url";
-import type { ListResponse } from "./types";
+import type { ListResponse, SearchResponse, SearchProgress } from "./types";
 
 export const filesApi = {
+	async searchProgress(
+		path: string,
+		query: string,
+		signal: AbortSignal,
+		onProgress: (result: SearchProgress) => void,
+	): Promise<void> {
+		const response = await request(
+			appUrl(
+				`/api/fs/search?path=${encodeURIComponent(path)}&q=${encodeURIComponent(query)}&stream=1`,
+			),
+			{ signal },
+		);
+		if (!response.body) throw new Error("Search response is unavailable");
+		const reader = response.body.getReader();
+		const decoder = new TextDecoder();
+		let buffer = "";
+		let complete = false;
+		const consume = (line: string) => {
+			if (!line.trim()) return;
+			const result = JSON.parse(line) as SearchProgress;
+			if (!Array.isArray(result.entries) || typeof result.done !== "boolean")
+				throw new Error("Invalid search response");
+			complete = result.done;
+			onProgress(result);
+		};
+		try {
+			while (true) {
+				const { value, done } = await reader.read();
+				signal.throwIfAborted();
+				buffer += decoder.decode(value, { stream: !done });
+				let newline: number;
+				while ((newline = buffer.indexOf("\n")) >= 0) {
+					consume(buffer.slice(0, newline));
+					buffer = buffer.slice(newline + 1);
+				}
+				if (done) break;
+			}
+			consume(buffer);
+			if (!complete) throw new Error("Search was interrupted. Try again.");
+		} finally {
+			await reader.cancel().catch(() => {});
+			reader.releaseLock();
+		}
+	},
+	search: (path: string, query: string, signal?: AbortSignal) =>
+		requestJSON<SearchResponse>(
+			`/api/fs/search?path=${encodeURIComponent(path)}&q=${encodeURIComponent(query)}`,
+			{ signal },
+		),
 	async list(path: string, signal?: AbortSignal): Promise<ListResponse | null> {
 		try {
 			return await requestJSON<ListResponse>(

@@ -44,6 +44,7 @@ func NewHandler(cfg Config) *gin.Engine {
 
 	fs := api.Group("/fs")
 	fs.GET("/list", h.list)
+	fs.GET("/search", h.search)
 	fs.GET("/download", h.download)
 	fs.POST("/upload", h.upload)
 	fs.POST("/mkdir", h.mkdir)
