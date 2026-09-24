@@ -690,7 +690,7 @@ export function FileBrowser() {
 								? "Text options in ···"
 								: query.trim()
 									? "Best matches first · Enter to open"
-									: "/ filter folder · f find in subfolders"}
+									: "/ filter folder · f find all files"}
 						</span>
 						<span className="status-mobile">
 							{isFile
@@ -718,8 +718,6 @@ export function FileBrowser() {
 
 			{finderPath === path && (
 				<FileFinder
-					key={isFile ? parentOf(path) : path}
-					path={isFile ? parentOf(path) : path}
 					onClose={() => setFinderPath(null)}
 					onOpen={(entry) => {
 						setFinderPath(null);

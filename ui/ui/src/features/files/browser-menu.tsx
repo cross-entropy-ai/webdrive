@@ -142,7 +142,7 @@ export function BrowserMenu({
 							}}
 						>
 							<Icon icon="solar:minimalistic-magnifer-linear" width={14} />
-							Find in subfolders <kbd style={{ marginLeft: "auto" }}>f</kbd>
+							Find files <kbd style={{ marginLeft: "auto" }}>f</kbd>
 						</button>
 						<div className="popup-divider" />
 						{previewOptions}

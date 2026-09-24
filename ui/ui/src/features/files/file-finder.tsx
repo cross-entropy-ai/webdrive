@@ -10,11 +10,9 @@ import "./file-finder.css";
 
 // Mounted only while open, so closing also cancels pending work and clears the query.
 export function FileFinder({
-	path,
 	onClose,
 	onOpen,
 }: {
-	path: string;
 	onClose: () => void;
 	onOpen: (entry: SearchEntry) => void;
 }) {
@@ -39,7 +37,7 @@ export function FileFinder({
 		const timer = window.setTimeout(async () => {
 			try {
 				await filesApi.searchProgress(
-					path,
+					"/",
 					query,
 					controller.signal,
 					(result) => {
@@ -54,7 +52,7 @@ export function FileFinder({
 			window.clearTimeout(timer);
 			controller.abort();
 		};
-	}, [path, query, attempt]);
+	}, [query, attempt]);
 
 	useEffect(() => {
 		listRef.current
@@ -65,16 +63,14 @@ export function FileFinder({
 	return (
 		<Modal open onClose={onClose} className="finder-modal">
 			<Modal.Header>Find files</Modal.Header>
-			<div className="finder-scope" title={path}>
-				{path} · including subfolders
-			</div>
+			<div className="finder-scope">All files · from root</div>
 			<div className="finder-input-row">
 				<Icon icon="solar:minimalistic-magnifer-linear" width={20} />
 				<input
 					ref={inputRef}
 					autoFocus
 					role="combobox"
-					aria-label="Find files in subfolders"
+					aria-label="Find files"
 					aria-autocomplete="list"
 					aria-expanded={true}
 					aria-controls={`${id}-results`}
@@ -167,11 +163,11 @@ export function FileFinder({
 								</button>
 							</>
 						) : pending ? (
-							"Searching subfolders…"
+							"Searching all files…"
 						) : query.trim() ? (
 							"No matching files. Try fewer characters."
 						) : (
-							"Type a few characters to find files in this folder and all subfolders."
+							"Type a few characters to find files anywhere in your workspace."
 						)}
 					</div>
 				)}
@@ -197,7 +193,7 @@ export function FileFinder({
 					{pending
 						? `Searching… · ${entries.length} matches so far`
 						: response?.partial
-							? "Partial results — narrow the search or folder."
+							? "Partial results — some folders could not be searched."
 							: response?.has_more
 								? "Top 100 matches · keep typing to narrow"
 								: response
