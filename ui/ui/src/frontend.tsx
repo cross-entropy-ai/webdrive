@@ -9,6 +9,11 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./app";
 
+// Freeze the resolved mount point before client-side navigation changes the
+// document URL; otherwise a relative <base> would move with each directory.
+const base = document.querySelector("base");
+if (base) base.href = base.href;
+
 const elem = document.getElementById("root")!;
 const app = (
 	<StrictMode>

@@ -1,9 +1,12 @@
 package server
 
 import (
+	"bytes"
 	"fmt"
 	"io/fs"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/cross-entropy-ai/webdrive/logger"
 	"github.com/cross-entropy-ai/webdrive/ui"
@@ -59,14 +62,28 @@ func NewHandler(cfg Config) *gin.Engine {
 // client-side routing.
 func spaHandler(root fs.FS) gin.HandlerFunc {
 	fileServer := http.FileServer(http.FS(root))
+	index, indexErr := fs.ReadFile(root, "index.html")
 	return func(c *gin.Context) {
 		p := c.Request.URL.Path
-		if p == "/" {
-			fileServer.ServeHTTP(c.Writer, c.Request)
+		_, statErr := fs.Stat(root, strings.TrimPrefix(p, "/"))
+		if p == "/" || p == "/index.html" || statErr != nil {
+			if indexErr != nil {
+				c.Status(http.StatusNotFound)
+				return
+			}
+			// The proxy may strip a mount prefix before forwarding the request.
+			// A relative base walks back to the application root using only the
+			// upstream path, keeping that external prefix without proxy headers.
+			depth := strings.Count(strings.TrimPrefix(c.Request.URL.EscapedPath(), "/"), "/")
+			base := "./"
+			if depth > 0 {
+				base = strings.Repeat("../", depth)
+			}
+			html := bytes.Replace(index, []byte(`<base href="/"`), []byte(`<base href="`+base+`"`), 1)
+			c.Header("Content-Type", "text/html; charset=utf-8")
+			c.Header("Cache-Control", "no-cache")
+			http.ServeContent(c.Writer, c.Request, "index.html", time.Time{}, bytes.NewReader(html))
 			return
-		}
-		if _, err := fs.Stat(root, p[1:]); err != nil {
-			c.Request.URL.Path = "/"
 		}
 		fileServer.ServeHTTP(c.Writer, c.Request)
 	}

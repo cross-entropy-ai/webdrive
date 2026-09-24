@@ -226,3 +226,59 @@ func TestSPAHandler(t *testing.T) {
 		t.Fatal(w.Body.String())
 	}
 }
+
+func TestSPAProxyBase(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.NoRoute(spaHandler(fstest.MapFS{
+		"index.html": &fstest.MapFile{Data: []byte(`<!doctype html><base href="/" /><script src="./app.js"></script>`)},
+		"app.js":     &fstest.MapFile{Data: []byte("console.log('webdrive')")},
+	}))
+	for _, prefix := range []string{"", "/proxy/9090", "/code/proxy/9090", "/files"} {
+		for _, path := range []string{"/", "/docs", "/docs/nested", "/docs/nested/", "/docs/hello%20%23%25.txt", "/index.html"} {
+			t.Run(prefix+path, func(t *testing.T) {
+				var handler http.Handler = r
+				if prefix != "" {
+					handler = http.StripPrefix(prefix, r)
+				}
+				browserURL, err := url.Parse("http://localhost" + prefix + path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				w := requestJSON(t, handler, "GET", browserURL.String(), nil, 200)
+				_, rest, ok := strings.Cut(w.Body.String(), `<base href="`)
+				if !ok {
+					t.Fatalf("missing base: %s", w.Body.String())
+				}
+				base, _, _ := strings.Cut(rest, `"`)
+				baseURL, err := url.Parse(base)
+				if err != nil {
+					t.Fatal(err)
+				}
+				resolved := browserURL.ResolveReference(baseURL)
+				if resolved.Path != prefix+"/" {
+					t.Fatalf("base %q resolves to %q, want %q", base, resolved.Path, prefix+"/")
+				}
+				asset := resolved.ResolveReference(&url.URL{Path: "app.js"})
+				w = requestJSON(t, handler, "GET", asset.String(), nil, 200)
+				if w.Body.String() != "console.log('webdrive')" {
+					t.Fatalf("asset returned HTML: %s", w.Body.String())
+				}
+			})
+		}
+	}
+}
+
+func TestSPAHeadAndMissingBuild(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.NoRoute(spaHandler(fstest.MapFS{"index.html": &fstest.MapFile{Data: []byte(`<!doctype html><base href="/" />`)}}))
+	w := requestJSON(t, r, "HEAD", "/docs/nested", nil, 200)
+	if w.Body.Len() != 0 || !strings.HasPrefix(w.Header().Get("Content-Type"), "text/html") {
+		t.Fatalf("unexpected HEAD: %s %s", w.Header(), w.Body.String())
+	}
+	r = gin.New()
+	r.NoRoute(spaHandler(fstest.MapFS{}))
+	requestJSON(t, r, "GET", "/", nil, 404)
+	requestJSON(t, r, "GET", "/nested", nil, 404)
+}

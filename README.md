@@ -36,6 +36,11 @@ webdrive -p 8080 --host 127.0.0.1 /path/to/files
 
 Then open `http://localhost:9090` in your browser.
 
+When using code-server port forwarding, open `/proxy/9090/` on your code-server
+host (keep the trailing slash). Webdrive automatically keeps that prefix for
+assets, navigation, previews, downloads, and uploads, including when refreshing
+a nested directory. Reverse proxies that strip a path prefix are also supported.
+
 ## Features
 
 - List and gallery view modes

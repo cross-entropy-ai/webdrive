@@ -1,4 +1,5 @@
 import { ApiError, postJSON, requestJSON, responseError } from "../../lib/api";
+import { appUrl } from "../../lib/app-url";
 import type { ListResponse } from "./types";
 
 export const filesApi = {
@@ -63,7 +64,7 @@ export function uploadFile(
 		};
 		xhr.onerror = () => reject(new Error(`Failed to upload ${relativePath}`));
 		xhr.onabort = () => reject(new Error(`Upload cancelled: ${relativePath}`));
-		xhr.open("POST", "/api/fs/upload");
+		xhr.open("POST", appUrl("/api/fs/upload"));
 		xhr.send(form);
 	});
 }

@@ -1,3 +1,5 @@
+import { appUrl } from "./app-url";
+
 export class ApiError extends Error {
 	constructor(
 		message: string,
@@ -43,7 +45,7 @@ export async function requestJSON<T>(
 	url: string,
 	init?: RequestInit,
 ): Promise<T> {
-	return (await request(url, init)).json() as Promise<T>;
+	return (await request(appUrl(url), init)).json() as Promise<T>;
 }
 
 export function postJSON<T>(url: string, body: unknown): Promise<T> {
@@ -55,7 +57,7 @@ export function postJSON<T>(url: string, body: unknown): Promise<T> {
 }
 
 export function previewUrl(path: string): string {
-	return `/api/fs/preview?path=${encodeURIComponent(path)}`;
+	return appUrl(`/api/fs/preview?path=${encodeURIComponent(path)}`);
 }
 
 export function downloadUrl(paths: string | readonly string[]): string {
@@ -63,5 +65,5 @@ export function downloadUrl(paths: string | readonly string[]): string {
 	for (const path of typeof paths === "string" ? [paths] : paths) {
 		params.append("path", path);
 	}
-	return `/api/fs/download?${params}`;
+	return appUrl(`/api/fs/download?${params}`);
 }
