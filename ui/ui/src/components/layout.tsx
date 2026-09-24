@@ -1,4 +1,4 @@
-import { Icon } from "@iconify/react";
+import { Icon } from "./icon";
 import { useTheme } from "next-themes";
 import { useEffect, useState, type ReactNode } from "react";
 import { requestJSON } from "../lib/api";

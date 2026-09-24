@@ -51,6 +51,9 @@ func NewHandler(cfg Config) *gin.Engine {
 	fs.POST("/rename", h.rename)
 	fs.POST("/delete", h.delete)
 	fs.GET("/preview", h.preview)
+	fs.HEAD("/preview", h.preview)
+	fs.GET("/content/*path", h.content)
+	fs.HEAD("/content/*path", h.content)
 
 	uiFS := ui.FS()
 	r.NoRoute(spaHandler(uiFS))
@@ -85,6 +88,6 @@ func spaHandler(root fs.FS) gin.HandlerFunc {
 			http.ServeContent(c.Writer, c.Request, "index.html", time.Time{}, bytes.NewReader(html))
 			return
 		}
-		fileServer.ServeHTTP(c.Writer, c.Request)
+		serveAsset(c, root, fileServer)
 	}
 }

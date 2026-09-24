@@ -67,3 +67,9 @@ export function downloadUrl(paths: string | readonly string[]): string {
 	}
 	return appUrl(`/api/fs/download?${params}`);
 }
+
+export function contentUrl(path: string): string {
+	return appUrl(
+		`/api/fs/content/${path.replace(/^\/+/, "").split("/").map(encodeURIComponent).join("/")}`,
+	);
+}

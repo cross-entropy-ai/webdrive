@@ -19,7 +19,7 @@ var textFileExts = map[string]bool{
 	".rs": true, ".go": true, ".py": true, ".rb": true, ".lua": true,
 	".sh": true, ".bash": true, ".zsh": true, ".fish": true,
 	".yaml": true, ".yml": true, ".toml": true, ".ini": true, ".conf": true, ".cfg": true,
-	".md": true, ".mdx": true, ".rst": true, ".txt": true, ".log": true,
+	".md": true, ".markdown": true, ".mdx": true, ".rst": true, ".txt": true, ".log": true,
 	".sql": true, ".graphql": true, ".gql": true, ".proto": true,
 	".dockerfile": true,
 	".vue":        true, ".svelte": true, ".astro": true,
@@ -41,51 +41,59 @@ var textFileNames = map[string]bool{
 	".env": true, ".env.local": true, ".env.example": true,
 }
 
+// preview keeps the existing query-based API; content also allows relative
+// assets in HTML and Markdown documents to resolve beneath the served root.
 func (h *handler) preview(c *gin.Context) {
-	reqPath := c.Query("path")
+	h.servePreview(c, c.Query("path"))
+}
+
+func (h *handler) content(c *gin.Context) {
+	h.servePreview(c, c.Param("path"))
+}
+
+func (h *handler) servePreview(c *gin.Context, reqPath string) {
 	full, err := h.resolve(reqPath)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	info, err := os.Stat(full)
+	f, err := os.Open(full)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
-	if info.IsDir() {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "is a directory"})
-		return
-	}
-
-	name := info.Name()
-	ext := strings.ToLower(filepath.Ext(name))
-	nameLower := strings.ToLower(name)
-	ct := ""
-	if textFileExts[ext] || textFileNames[nameLower] {
-		ct = "text/plain; charset=utf-8"
-	} else {
-		ct = mime.TypeByExtension(ext)
-	}
-	if ct != "" {
-		c.Header("Content-Type", ct)
-		c.Header("Content-Length", fmt.Sprintf("%d", info.Size()))
-		c.File(full)
-		return
-	}
-
-	// Unknown extension — sniff content type, then stream from same handle
-	f, err := os.Open(full)
+	defer f.Close()
+	info, err := f.Stat()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	defer f.Close()
-	buf := make([]byte, 512)
-	n, _ := f.Read(buf)
-	ct = http.DetectContentType(buf[:n])
-	_, _ = f.Seek(0, io.SeekStart)
+	if !info.Mode().IsRegular() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "is a directory"})
+		return
+	}
+	ext := strings.ToLower(filepath.Ext(info.Name()))
+	ct := mime.TypeByExtension(ext)
+	if textFileExts[ext] || textFileNames[strings.ToLower(info.Name())] {
+		ct = "text/plain; charset=utf-8"
+	}
+	if ct == "" {
+		buf := make([]byte, 512)
+		n, _ := f.Read(buf)
+		ct = http.DetectContentType(buf[:n])
+		if _, err := f.Seek(0, io.SeekStart); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	}
 	c.Header("Content-Type", ct)
-	c.Header("Content-Length", fmt.Sprintf("%d", info.Size()))
-	c.DataFromReader(http.StatusOK, info.Size(), ct, f, nil)
+	c.Header("X-Content-Type-Options", "nosniff")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("ETag", fmt.Sprintf(`"%x-%x"`, info.Size(), info.ModTime().UnixNano()))
+	if strings.HasPrefix(ct, "text/html") || strings.HasPrefix(ct, "image/svg+xml") {
+		// Served documents must not execute with the file manager's privileges,
+		// including when their content URL is opened outside the preview frame.
+		c.Header("Content-Security-Policy", "sandbox; script-src 'none'; object-src 'none'; form-action 'none'")
+	}
+	http.ServeContent(c.Writer, c.Request, info.Name(), info.ModTime(), f)
 }

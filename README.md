@@ -44,13 +44,20 @@ a nested directory. Reverse proxies that strip a path prefix are also supported.
 ## Features
 
 - List and gallery view modes
-- File preview (text with syntax highlighting, images, video, audio, PDF)
+- Rendered HTML and Markdown previews, with a source view, copy, and line wrapping
+- Text/code previews with on-demand syntax highlighting; images, streaming video/audio, and PDF
+- Local images and relative document links work behind code-server's port proxy
+- Smaller production bundles, compressed/cached assets, and visible loading states
 - Image/video carousel with keyboard and swipe navigation
 - Select mode for batch download and delete
 - Download files and directories as zip
 - Rename and delete files/directories
 - Dark mode
 - Mobile friendly
+
+HTML previews display static content in a sandbox with scripts disabled. Markdown
+supports tables, task lists, and fenced code blocks. Text previews show up to 1 MB
+to keep large logs responsive; the full file is always available to download.
 
 ## Development
 

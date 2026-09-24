@@ -109,3 +109,21 @@ export function langFromFilename(name: string): string | undefined {
 	if (!ext) return undefined;
 	return languages[ext];
 }
+
+export type PreviewKind = ReturnType<typeof mimeCategory> | "html" | "markdown";
+
+export function previewKind(name: string, contentType = ""): PreviewKind {
+	const extension = name.split(".").pop()?.toLowerCase();
+	const mime = contentType.split(";", 1)[0]?.trim().toLowerCase();
+	if (extension === "html" || extension === "htm" || mime === "text/html")
+		return "html";
+	if (
+		extension === "md" ||
+		extension === "markdown" ||
+		mime === "text/markdown"
+	)
+		return "markdown";
+	if (contentType) return mimeCategory(contentType);
+	if (extension === "pdf") return "pdf";
+	return mediaTypeFromName(name) ?? "text";
+}

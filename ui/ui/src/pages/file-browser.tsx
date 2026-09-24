@@ -1,5 +1,5 @@
-import { Icon } from "@iconify/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Icon } from "../components/icon";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../components/button";
 import { Modal } from "../components/modal";
@@ -7,9 +7,10 @@ import { RenameModal } from "../components/rename-modal";
 import { filesApi } from "../features/files/api";
 import { Breadcrumb } from "../features/files/breadcrumb";
 import { BrowserMenu } from "../features/files/browser-menu";
-import { FilePreview } from "../features/files/file-preview";
+import { LoadingState } from "../components/loading-state";
 import { fileIcon } from "../features/files/file-types";
 import { GalleryView, ZOOM_MIN } from "../features/files/gallery-view";
+import { PreviewBoundary } from "../features/files/preview-boundary";
 import { baseName, joinPath, parentOf } from "../features/files/path";
 import { sortEntries } from "../features/files/sort";
 import type { SortDirection, SortKey, ViewMode } from "../features/files/types";
@@ -18,6 +19,12 @@ import { useFileUpload } from "../features/files/use-file-upload";
 import { downloadUrl, errorMessage } from "../lib/api";
 import { formatBytes, formatTime } from "../lib/format";
 import "./file-browser.css";
+
+const FilePreview = lazy(() =>
+	import("../features/files/file-preview").then((module) => ({
+		default: module.FilePreview,
+	})),
+);
 
 export function FileBrowser() {
 	const location = useLocation();
@@ -311,9 +318,13 @@ export function FileBrowser() {
 
 					<div className="datatable-scroll">
 						{isFile ? (
-							<FilePreview path={path} />
+							<PreviewBoundary key={path} path={path}>
+								<Suspense fallback={<LoadingState label="Loading preview…" />}>
+									<FilePreview path={path} />
+								</Suspense>
+							</PreviewBoundary>
 						) : loading && !data ? (
-							<div className="datatable-state">loading...</div>
+							<LoadingState label="Loading files…" />
 						) : viewMode === "gallery" ? (
 							sortedEntries.length === 0 ? (
 								<div className="datatable-state">Empty directory.</div>

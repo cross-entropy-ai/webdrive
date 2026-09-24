@@ -1,4 +1,4 @@
-import { Icon } from "@iconify/react";
+import { Icon } from "../../components/icon";
 import { useState } from "react";
 import { Modal } from "../../components/modal";
 

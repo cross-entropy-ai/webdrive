@@ -63,14 +63,7 @@ test:
 ## build-ui: build the React frontend into ui/ui/dist
 build-ui: deps
 	@$(call step, "Building UI frontend...")
-	@rm -rf $(DIST_DIR)
-	@mkdir -p $(DIST_DIR)
-	@touch $(DIST_DIR)/.gitkeep
-	@cd $(UI_DIR) && bun build ./src/index.html \
-	  --outdir=dist \
-	  --target=browser \
-	  --minify \
-	  --define:process.env.NODE_ENV='"production"'
+	@cd $(UI_DIR) && bun run build
 	@$(call success, "UI build completed")
 
 ## build-server: compile the Go binary (assumes UI is already in ui/ui/dist)

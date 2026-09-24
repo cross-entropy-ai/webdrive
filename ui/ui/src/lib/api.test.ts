@@ -1,6 +1,12 @@
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import { filesApi, uploadFile } from "../features/files/api";
-import { ApiError, downloadUrl, previewUrl, requestJSON } from "./api";
+import {
+	ApiError,
+	contentUrl,
+	downloadUrl,
+	previewUrl,
+	requestJSON,
+} from "./api";
 
 const fetchSpy = spyOn(globalThis, "fetch");
 const originalDocument = Object.getOwnPropertyDescriptor(
@@ -148,6 +154,9 @@ for (const prefix of ["/", "/proxy/9090/", "/code/proxy/9090/", "/files/"]) {
 		);
 
 		const filename = "/docs/你好 #?%.txt";
+		expect(contentUrl(filename)).toBe(
+			`${prefix}api/fs/content/docs/${encodeURIComponent("你好 #?%.txt")}`,
+		);
 		const preview = new URL(previewUrl(filename), "https://example.com");
 		expect(preview.pathname).toBe(`${prefix}api/fs/preview`);
 		expect(preview.searchParams.get("path")).toBe(filename);

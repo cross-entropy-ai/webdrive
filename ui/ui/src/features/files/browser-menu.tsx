@@ -1,4 +1,4 @@
-import { Icon } from "@iconify/react";
+import { Icon } from "../../components/icon";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../../components/button";
 import { downloadUrl } from "../../lib/api";

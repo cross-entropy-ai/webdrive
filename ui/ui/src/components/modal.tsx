@@ -1,4 +1,3 @@
-import { AnimatePresence, motion } from "framer-motion";
 import type { ReactNode } from "react";
 
 interface ModalProps {
@@ -8,30 +7,12 @@ interface ModalProps {
 }
 
 export function Modal({ open, onClose, children }: ModalProps) {
+	if (!open) return null;
 	return (
-		<AnimatePresence>
-			{open && (
-				<div className="modal-root">
-					<motion.div
-						className="modal-backdrop"
-						initial={{ opacity: 0 }}
-						animate={{ opacity: 1 }}
-						exit={{ opacity: 0 }}
-						transition={{ duration: 0.1 }}
-						onClick={onClose}
-					/>
-					<motion.div
-						className="modal-content"
-						initial={{ opacity: 0, y: 4 }}
-						animate={{ opacity: 1, y: 0 }}
-						exit={{ opacity: 0, y: 4 }}
-						transition={{ duration: 0.1 }}
-					>
-						{children}
-					</motion.div>
-				</div>
-			)}
-		</AnimatePresence>
+		<div className="modal-root">
+			<div className="modal-backdrop" onClick={onClose} />
+			<div className="modal-content">{children}</div>
+		</div>
 	);
 }
 
