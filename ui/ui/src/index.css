@@ -774,3 +774,8 @@ body {
 .modal-root:not([open]) {
 	display: none;
 }
+.breadcrumb {
+	height: 32px;
+	min-height: 32px;
+	flex-shrink: 0;
+}

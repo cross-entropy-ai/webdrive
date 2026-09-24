@@ -13,6 +13,7 @@ import { EmptyFolder } from "../features/files/empty-folder";
 import { GalleryView, ZOOM_MIN } from "../features/files/gallery-view";
 import { PreviewBoundary } from "../features/files/preview-boundary";
 import { baseName, joinPath, parentOf } from "../features/files/path";
+import { fuzzyEntries } from "../features/files/fuzzy-search";
 import { sortEntries } from "../features/files/sort";
 import { useBrowserPreferences } from "../features/files/use-browser-preferences";
 import type { SortKey } from "../features/files/types";
@@ -35,15 +36,26 @@ export function FileBrowser() {
 	const path = decodeURIComponent(location.pathname) || "/";
 
 	const navigate = (p: string) => {
+		const entry = data?.entries.find(
+			(entry) => joinPath(path, entry.name) === p,
+		);
+		const kind =
+			p === "/" || p === parentOf(path)
+				? "directory"
+				: entry
+					? entry.is_dir
+						? "directory"
+						: "file"
+					: undefined;
 		if (p === "/") {
-			routerNavigate("/");
+			routerNavigate("/", { state: { entryKind: "directory" } });
 			return;
 		}
 		const encoded = p
 			.split("/")
 			.map((seg) => encodeURIComponent(seg))
 			.join("/");
-		routerNavigate(encoded);
+		routerNavigate(encoded, { state: { entryKind: kind } });
 	};
 
 	const {
@@ -53,7 +65,14 @@ export function FileBrowser() {
 		loading,
 		isFile,
 		refresh: refreshListing,
-	} = useDirectory(path);
+	} = useDirectory(
+		path,
+		location.state?.entryKind === "file"
+			? true
+			: location.state?.entryKind === "directory"
+				? false
+				: undefined,
+	);
 
 	const { viewMode, setViewMode, sortKey, setSortKey, sortDir, setSortDir } =
 		useBrowserPreferences();
@@ -136,14 +155,16 @@ export function FileBrowser() {
 			)
 				return;
 			if (
-				event.key === "/" &&
+				(event.key.toLowerCase() === "f" || event.key === "/") &&
 				!event.metaKey &&
 				!event.ctrlKey &&
 				!event.altKey &&
+				!event.isComposing &&
 				!isFile
 			) {
 				event.preventDefault();
 				searchRef.current?.focus();
+				searchRef.current?.select();
 			}
 			if (event.key === "Escape") {
 				setSelectMode(false);
@@ -224,17 +245,26 @@ export function FileBrowser() {
 	const sortedEntries = useMemo(
 		() =>
 			!isFile && data
-				? sortEntries(
-						data.entries.filter((entry) =>
-							entry.name
-								.toLocaleLowerCase()
-								.includes(query.trim().toLocaleLowerCase()),
-						),
-						sortKey,
-						sortDir,
-					)
+				? fuzzyEntries(sortEntries(data.entries, sortKey, sortDir), query)
 				: [],
 		[data, isFile, sortKey, sortDir, query],
+	);
+	const fileMenu = (previewOptions?: React.ReactNode) => (
+		<BrowserMenu
+			path={path}
+			isFile={true}
+			viewMode={viewMode}
+			setViewMode={setViewMode}
+			sortKey={sortKey}
+			sortDir={sortDir}
+			toggleSort={toggleSort}
+			onSelect={() => setSelectMode(true)}
+			onNewFolder={() => setNewFolderOpen(true)}
+			onUpload={() => fileInputRef.current?.click()}
+			onRename={() => setRenameOpen(true)}
+			onDelete={() => setDeleteOpen(true)}
+			previewOptions={previewOptions}
+		/>
 	);
 
 	return (
@@ -256,7 +286,22 @@ export function FileBrowser() {
 								: `${data?.entries.filter((entry) => entry.is_dir).length ?? 0} folders · ${data?.entries.filter((entry) => !entry.is_dir).length ?? 0} files`}
 					</p>
 				</div>
-				{!isFile && (
+				{isFile ? (
+					<div className="heading-actions">
+						<Button onClick={() => navigate(parentOf(path))}>
+							<Icon icon="solar:arrow-left-linear" width={18} />
+							Back to folder
+						</Button>
+						<a
+							className="btn btn-primary"
+							aria-label="Download current file"
+							href={downloadUrl(path)}
+						>
+							<Icon icon="solar:download-square-linear" width={18} />
+							Download file
+						</a>
+					</div>
+				) : (
 					<div className="heading-actions">
 						<Button
 							onClick={() => setNewFolderOpen(true)}
@@ -308,171 +353,194 @@ export function FileBrowser() {
 							<span>Your files will be added to this folder</span>
 						</div>
 					)}
-					<div className="file-list-header">
-						<div className="toolbar-group">
-							{selectMode ? (
-								<>
-									<input
-										type="checkbox"
-										className="select-checkbox"
-										checked={
-											!!data &&
-											sortedEntries.length > 0 &&
-											selected.size === sortedEntries.length
-										}
-										ref={(el) => {
-											if (el)
-												el.indeterminate =
-													selected.size > 0 &&
-													(!data || selected.size < sortedEntries.length);
-										}}
-										aria-label="Select all visible files"
-										onChange={toggleSelectAll}
-									/>
-									<span className="select-action-count">
-										{selected.size} selected
-									</span>
-									{selected.size > 0 && (
-										<>
-											<Button
-												variant="ghost"
-												aria-label="Download selected"
-												title="Download selected"
-												onClick={handleBatchDownload}
-											>
-												<Icon icon="solar:download-square-linear" width={15} />
-											</Button>
-											<Button
-												variant="danger"
-												aria-label="Delete selected"
-												title="Delete selected"
-												onClick={() => setBatchDeleteOpen(true)}
-											>
-												<Icon icon="solar:trash-bin-2-linear" width={15} />
-											</Button>
-										</>
-									)}
-								</>
-							) : (
-								path !== "/" && (
-									<Button
-										variant="ghost"
-										aria-label="Parent folder"
-										title="Parent folder"
-										onClick={() => navigate(parentOf(path))}
-									>
-										<Icon icon="solar:arrow-left-linear" width={15} />
-										{isFile && <span>Back to folder</span>}
-									</Button>
-								)
-							)}
-							{!isFile && !selectMode && (
-								<div className="file-search">
-									<Icon icon="solar:minimalistic-magnifer-linear" width={18} />
-									<input
-										ref={searchRef}
-										type="search"
-										aria-label="Search this folder"
-										placeholder="Search this folder…"
-										value={query}
-										onChange={(event) => setQuery(event.target.value)}
-										onKeyDown={(event) => {
-											if (event.key === "Escape") {
-												setQuery("");
-												searchRef.current?.blur();
+					{!isFile && (
+						<div className="file-list-header">
+							<div className="toolbar-group">
+								{selectMode ? (
+									<>
+										<input
+											type="checkbox"
+											className="select-checkbox"
+											checked={
+												!!data &&
+												sortedEntries.length > 0 &&
+												selected.size === sortedEntries.length
 											}
-										}}
-									/>
-									{query ? (
-										<button
-											className="icon-btn"
-											aria-label="Clear search"
-											onClick={() => {
-												setQuery("");
-												searchRef.current?.focus();
+											ref={(el) => {
+												if (el)
+													el.indeterminate =
+														selected.size > 0 &&
+														(!data || selected.size < sortedEntries.length);
 											}}
+											aria-label="Select all visible files"
+											onChange={toggleSelectAll}
+										/>
+										<span className="select-action-count">
+											{selected.size} selected
+										</span>
+										{selected.size > 0 && (
+											<>
+												<Button
+													variant="ghost"
+													aria-label="Download selected"
+													title="Download selected"
+													onClick={handleBatchDownload}
+												>
+													<Icon
+														icon="solar:download-square-linear"
+														width={15}
+													/>
+												</Button>
+												<Button
+													variant="danger"
+													aria-label="Delete selected"
+													title="Delete selected"
+													onClick={() => setBatchDeleteOpen(true)}
+												>
+													<Icon icon="solar:trash-bin-2-linear" width={15} />
+												</Button>
+											</>
+										)}
+									</>
+								) : (
+									path !== "/" && (
+										<Button
+											variant="ghost"
+											aria-label="Parent folder"
+											title="Parent folder"
+											onClick={() => navigate(parentOf(path))}
 										>
-											<Icon icon="solar:close-circle-linear" width={16} />
-										</button>
-									) : (
-										<kbd>/</kbd>
-									)}
-								</div>
-							)}
-						</div>
-						<div className="toolbar-group toolbar-end">
-							{!isFile && !selectMode && (
-								<>
-									<Button
-										className="refresh-button"
-										variant="ghost"
-										aria-label="Refresh folder"
-										title="Refresh folder"
-										disabled={loading}
-										onClick={() => void refreshListing()}
-									>
-										<Icon icon="solar:refresh-linear" width={17} />
-									</Button>
-									<div className="view-switch" aria-label="View mode">
-										<button
-											aria-label="List view"
-											title="List view"
-											aria-pressed={viewMode === "list"}
-											onClick={() => setViewMode("list")}
-										>
-											<Icon icon="solar:list-linear" width={18} />
-										</button>
-										<button
-											aria-label="Gallery view"
-											title="Gallery view"
-											aria-pressed={viewMode === "gallery"}
-											onClick={() => setViewMode("gallery")}
-										>
-											<Icon icon="solar:widget-linear" width={18} />
-										</button>
+											<Icon icon="solar:arrow-left-linear" width={15} />
+											{isFile && <span>Back to folder</span>}
+										</Button>
+									)
+								)}
+								{!isFile && !selectMode && (
+									<div className="file-search">
+										<Icon
+											icon="solar:minimalistic-magnifer-linear"
+											width={18}
+										/>
+										<input
+											ref={searchRef}
+											type="search"
+											aria-label="Search this folder"
+											placeholder="Fuzzy find files…"
+											title="Match filename characters in order. Press f or / to focus, Enter to open the best match."
+											value={query}
+											onChange={(event) => setQuery(event.target.value)}
+											onKeyDown={(event) => {
+												if (event.nativeEvent.isComposing) return;
+												if (event.key === "Enter" && sortedEntries[0]) {
+													event.preventDefault();
+													navigate(joinPath(path, sortedEntries[0].name));
+												}
+												if (event.key === "ArrowDown") {
+													event.preventDefault();
+													document
+														.querySelector<HTMLElement>(
+															".file-list-item, .gallery-item",
+														)
+														?.focus();
+												}
+												if (event.key === "Escape") {
+													setQuery("");
+													searchRef.current?.blur();
+												}
+											}}
+										/>
+										{query ? (
+											<button
+												className="icon-btn"
+												aria-label="Clear search"
+												onClick={() => {
+													setQuery("");
+													searchRef.current?.focus();
+												}}
+											>
+												<Icon icon="solar:close-circle-linear" width={16} />
+											</button>
+										) : (
+											<kbd>f</kbd>
+										)}
 									</div>
-								</>
-							)}
-							{!isFile && viewMode === "gallery" && (
-								<input
-									type="range"
-									aria-label="Thumbnail size"
-									className="zoom-slider"
-									min={ZOOM_MIN}
-									max={zoomMax}
-									value={zoomMax + ZOOM_MIN - galleryCols}
-									onChange={(e) =>
-										setGalleryCols(zoomMax + ZOOM_MIN - Number(e.target.value))
-									}
-								/>
-							)}
-							{selectMode ? (
-								<Button
-									variant="ghost"
-									aria-label="Cancel selection"
-									onClick={exitSelectMode}
-								>
-									<Icon icon="solar:close-circle-linear" width={15} />
-								</Button>
-							) : (
-								<BrowserMenu
-									path={path}
-									isFile={isFile}
-									viewMode={viewMode}
-									setViewMode={setViewMode}
-									sortKey={sortKey}
-									sortDir={sortDir}
-									toggleSort={toggleSort}
-									onSelect={() => setSelectMode(true)}
-									onNewFolder={() => setNewFolderOpen(true)}
-									onUpload={() => fileInputRef.current?.click()}
-									onRename={() => setRenameOpen(true)}
-									onDelete={() => setDeleteOpen(true)}
-								/>
-							)}
+								)}
+							</div>
+							<div className="toolbar-group toolbar-end">
+								{!isFile && !selectMode && (
+									<>
+										<Button
+											className="refresh-button"
+											variant="ghost"
+											aria-label="Refresh folder"
+											title="Refresh folder"
+											disabled={loading}
+											onClick={() => void refreshListing()}
+										>
+											<Icon icon="solar:refresh-linear" width={17} />
+										</Button>
+										<div className="view-switch" aria-label="View mode">
+											<button
+												aria-label="List view"
+												title="List view"
+												aria-pressed={viewMode === "list"}
+												onClick={() => setViewMode("list")}
+											>
+												<Icon icon="solar:list-linear" width={18} />
+											</button>
+											<button
+												aria-label="Gallery view"
+												title="Gallery view"
+												aria-pressed={viewMode === "gallery"}
+												onClick={() => setViewMode("gallery")}
+											>
+												<Icon icon="solar:widget-linear" width={18} />
+											</button>
+										</div>
+									</>
+								)}
+								{!isFile && viewMode === "gallery" && (
+									<input
+										type="range"
+										aria-label="Thumbnail size"
+										className="zoom-slider"
+										min={ZOOM_MIN}
+										max={zoomMax}
+										value={zoomMax + ZOOM_MIN - galleryCols}
+										onChange={(e) =>
+											setGalleryCols(
+												zoomMax + ZOOM_MIN - Number(e.target.value),
+											)
+										}
+									/>
+								)}
+								{selectMode ? (
+									<Button
+										variant="ghost"
+										aria-label="Cancel selection"
+										onClick={exitSelectMode}
+									>
+										<Icon icon="solar:close-circle-linear" width={15} />
+									</Button>
+								) : (
+									<BrowserMenu
+										path={path}
+										isFile={isFile}
+										viewMode={viewMode}
+										setViewMode={setViewMode}
+										sortKey={sortKey}
+										sortDir={sortDir}
+										toggleSort={toggleSort}
+										onSelect={() => setSelectMode(true)}
+										onNewFolder={() => setNewFolderOpen(true)}
+										onUpload={() => fileInputRef.current?.click()}
+										onRename={() => setRenameOpen(true)}
+										onDelete={() => setDeleteOpen(true)}
+									/>
+								)}
+							</div>
 						</div>
-					</div>
-
+					)}
 					{uploadState &&
 						(() => {
 							const pct = Math.round(
@@ -500,8 +568,10 @@ export function FileBrowser() {
 							);
 						})()}
 
-					{!isFile && viewMode === "list" && sortedEntries.length > 0 && (
+					{!isFile && (
 						<FileColumns
+							gallery={viewMode === "gallery"}
+							searching={!!query.trim()}
 							selecting={selectMode}
 							sortKey={sortKey}
 							sortDir={sortDir}
@@ -511,8 +581,26 @@ export function FileBrowser() {
 					<div className="datatable-scroll" key={path}>
 						{isFile ? (
 							<PreviewBoundary key={path} path={path}>
-								<Suspense fallback={<LoadingState label="Loading preview…" />}>
-									<FilePreview path={path} />
+								<Suspense
+									fallback={
+										<div className="file-preview">
+											<div className="file-list-header">
+												<span className="toolbar-caption">
+													Loading preview…
+												</span>
+											</div>
+											<div className="preview-status">
+												Getting your file ready…
+											</div>
+											<LoadingState label="Loading preview…" />
+										</div>
+									}
+								>
+									<FilePreview
+										path={path}
+										onBack={() => navigate(parentOf(path))}
+										renderMenu={fileMenu}
+									/>
 								</Suspense>
 							</PreviewBoundary>
 						) : loading && !data ? (
@@ -525,6 +613,7 @@ export function FileBrowser() {
 							/>
 						) : viewMode === "gallery" ? (
 							<GalleryView
+								query={query}
 								key={path}
 								entries={sortedEntries}
 								dirPath={path}
@@ -538,6 +627,7 @@ export function FileBrowser() {
 							/>
 						) : (
 							<FileList
+								query={query}
 								entries={sortedEntries}
 								path={path}
 								selectMode={selectMode}
@@ -547,19 +637,31 @@ export function FileBrowser() {
 							/>
 						)}
 					</div>
-					{!isFile && (
-						<footer className="browser-status">
-							<span aria-live="polite">
-								{selected.size
-									? `${selected.size} selected`
-									: `${sortedEntries.length}${query ? ` of ${data?.entries.length ?? 0}` : ""} items`}
-							</span>
-							<span className="status-hint">Drop files anywhere to upload</span>
-							<span className="status-mobile">
-								{viewMode === "list" ? "List view" : "Gallery view"}
-							</span>
-						</footer>
-					)}
+					<footer className="browser-status">
+						<span aria-live="polite">
+							{isFile
+								? "File preview"
+								: loading && !data
+									? "Loading…"
+									: selected.size
+										? `${selected.size} selected`
+										: `${sortedEntries.length}${query ? ` of ${data?.entries.length ?? 0}` : ""} items`}
+						</span>
+						<span className="status-hint">
+							{isFile
+								? "Text options in ···"
+								: query.trim()
+									? "Best matches first · Enter to open"
+									: "f to find files · Drop files to upload"}
+						</span>
+						<span className="status-mobile">
+							{isFile
+								? "Preview"
+								: viewMode === "list"
+									? "List view"
+									: "Gallery view"}
+						</span>
+					</footer>
 				</div>
 			</div>
 

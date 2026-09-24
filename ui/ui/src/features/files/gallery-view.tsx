@@ -1,3 +1,4 @@
+import { FilenameMatch } from "./filename-match";
 import { Icon } from "../../components/icon";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { previewUrl } from "../../lib/api";
@@ -10,6 +11,7 @@ export const ZOOM_MIN = 1;
 const TILE_MIN_PX = 150;
 
 export function GalleryView({
+	query = "",
 	entries,
 	dirPath,
 	onNavigate,
@@ -21,6 +23,7 @@ export function GalleryView({
 	onToggleSelect,
 }: {
 	entries: Entry[];
+	query?: string;
 	dirPath: string;
 	onNavigate: (p: string) => void;
 	cols: number;
@@ -187,7 +190,9 @@ export function GalleryView({
 											<Icon icon="solar:play-bold" width={20} />
 										</div>
 									)}
-									<div className="gallery-hover-name">{entry.name}</div>
+									<div className="gallery-hover-name">
+										<FilenameMatch name={entry.name} query={query} />
+									</div>
 								</>
 							) : (
 								<>
@@ -196,7 +201,9 @@ export function GalleryView({
 										width={24}
 										className={entry.is_dir ? "text-accent" : "text-muted"}
 									/>
-									<span className="gallery-file-name">{entry.name}</span>
+									<span className="gallery-file-name">
+										<FilenameMatch name={entry.name} query={query} />
+									</span>
 								</>
 							)}
 						</button>

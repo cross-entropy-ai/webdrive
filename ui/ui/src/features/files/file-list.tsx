@@ -1,3 +1,4 @@
+import { FilenameMatch } from "./filename-match";
 import { Icon } from "../../components/icon";
 import { formatBytes, formatTime } from "../../lib/format";
 import { fileIcon, mediaTypeFromName, previewKind } from "./file-types";
@@ -6,15 +7,25 @@ import type { Entry, SortDirection, SortKey } from "./types";
 
 export function FileColumns({
 	selecting,
+	gallery = false,
+	searching = false,
 	sortKey,
 	sortDir,
 	onSort,
 }: {
 	selecting: boolean;
+	gallery?: boolean;
+	searching?: boolean;
 	sortKey: SortKey;
 	sortDir: SortDirection;
 	onSort: (key: SortKey) => void;
 }) {
+	if (gallery || searching)
+		return (
+			<div className="file-columns file-columns-summary">
+				<span>{searching ? "Best filename matches" : "Gallery"}</span>
+			</div>
+		);
 	return (
 		<div className={`file-columns${selecting ? " selecting" : ""}`}>
 			{(
@@ -41,6 +52,7 @@ export function FileColumns({
 }
 
 export function FileList({
+	query = "",
 	entries,
 	path,
 	selectMode,
@@ -49,6 +61,7 @@ export function FileList({
 	onNavigate,
 }: {
 	entries: Entry[];
+	query?: string;
 	path: string;
 	selectMode: boolean;
 	selected: Set<string>;
@@ -95,7 +108,9 @@ export function FileList({
 							/>
 						</span>
 						<span className="file-list-info">
-							<span className="file-list-name">{entry.name}</span>
+							<span className="file-list-name">
+								<FilenameMatch name={entry.name} query={query} />
+							</span>
 							<span className="file-list-meta">
 								{entry.mod_time && formatTime(entry.mod_time)}
 								{!entry.is_dir && entry.mod_time && " · "}

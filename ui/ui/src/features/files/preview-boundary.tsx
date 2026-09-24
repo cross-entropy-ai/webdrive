@@ -13,17 +13,23 @@ export class PreviewBoundary extends Component<
 	override render() {
 		if (this.state.failed)
 			return (
-				<div className="datatable-state" role="alert">
-					<p>The preview could not be loaded.</p>
-					<button
-						className="btn btn-ghost"
-						onClick={() => window.location.reload()}
-					>
-						Reload preview
-					</button>
-					<a className="btn btn-ghost" href={downloadUrl(this.props.path)}>
-						Download file
-					</a>
+				<div className="file-preview">
+					<div className="file-list-header">
+						<span className="toolbar-caption">Preview</span>
+					</div>
+					<div className="preview-status">Preview unavailable</div>
+					<div className="datatable-state" role="alert">
+						<p>The preview could not be loaded.</p>
+						<button
+							className="btn btn-ghost"
+							onClick={() => window.location.reload()}
+						>
+							Reload preview
+						</button>
+						<a className="btn btn-ghost" href={downloadUrl(this.props.path)}>
+							Download file
+						</a>
+					</div>
 				</div>
 			);
 		return this.props.children;

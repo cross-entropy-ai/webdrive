@@ -1253,3 +1253,132 @@
 	z-index: 3;
 	background: var(--panel);
 }
+
+/* Stable geometry across directories, files, selection, and preview modes. */
+.browser-heading {
+	height: 96px;
+	min-height: 96px;
+}
+.browser-heading p {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.file-list-header,
+.file-list-header.preview-toolbar {
+	height: 60px;
+	min-height: 60px;
+	flex-shrink: 0;
+	flex-wrap: nowrap;
+	padding: 8px 18px;
+}
+.preview-tabs .btn {
+	height: 36px;
+	min-height: 36px;
+}
+.file-columns,
+.preview-status {
+	height: 36px;
+	min-height: 36px;
+	flex-shrink: 0;
+}
+.file-columns-summary {
+	padding-left: 22px;
+	font-size: 12px;
+	color: var(--muted);
+}
+.preview-status {
+	padding: 8px 18px;
+	font-size: 12px;
+	color: var(--muted);
+	border-bottom: 1px solid var(--border);
+	background: color-mix(in srgb, var(--surface) 60%, var(--panel));
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.browser-status {
+	height: 42px;
+	min-height: 42px;
+}
+.popup-label {
+	padding: 8px 12px 6px;
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--muted);
+}
+.popup-item:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+.preview-text .code-lines {
+	width: max-content;
+	min-width: 100%;
+}
+.code-line {
+	display: grid;
+	grid-template-columns: var(--gutter-width) minmax(0, 1fr);
+	min-height: 1.6em;
+}
+.line-number {
+	padding-right: 1ch;
+	color: var(--muted);
+	text-align: right;
+	user-select: none;
+	border-right: 1px solid var(--border);
+	margin-right: 1ch;
+	font-weight: normal;
+}
+.line-number::before {
+	content: attr(data-line);
+}
+.code-line-content {
+	min-width: 0;
+}
+.code-line-content:empty::after {
+	content: "\200b";
+}
+.preview-wrap .code-lines {
+	width: 100%;
+}
+.preview-wrap .code-line-content {
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+.file-list-name mark,
+.gallery-item mark {
+	color: var(--accent);
+	background: color-mix(in srgb, var(--accent) 12%, transparent);
+	border-radius: 2px;
+	font-weight: 650;
+}
+@media (max-width: 600px) {
+	.browser-heading {
+		height: 112px;
+		min-height: 112px;
+	}
+	.file-list-header,
+	.file-list-header.preview-toolbar {
+		padding: 8px;
+	}
+	.browser-status {
+		height: 38px;
+		min-height: 38px;
+	}
+	.preview-status {
+		padding-left: 14px;
+		padding-right: 14px;
+		font-size: 11px;
+	}
+}
+@media (max-height: 600px) and (orientation: landscape) {
+	.browser-heading {
+		height: 48px;
+		min-height: 48px;
+		flex-wrap: nowrap;
+	}
+	.browser-heading-copy,
+	.heading-actions {
+		width: auto;
+	}
+}

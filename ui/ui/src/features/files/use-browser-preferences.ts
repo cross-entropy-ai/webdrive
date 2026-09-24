@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { SortDirection, SortKey, ViewMode } from "./types";
 
-function usePreference<T extends string>(
+export function usePreference<T extends string>(
 	key: string,
 	choices: readonly T[],
 	fallback: T,

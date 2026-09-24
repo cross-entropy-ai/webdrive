@@ -1,7 +1,16 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import {
+	lazy,
+	Suspense,
+	useEffect,
+	useMemo,
+	useState,
+	type ReactNode,
+} from "react";
 import { Icon } from "../../components/icon";
 import { LoadingState } from "../../components/loading-state";
 import { downloadUrl, previewUrl, request } from "../../lib/api";
+import { usePreference } from "./use-browser-preferences";
+import { MAX_NUMBERED_LINES } from "./highlight-lines";
 import { CodePreview } from "./code-preview";
 import { previewKind, isTextFilename, type PreviewKind } from "./file-types";
 import { baseName } from "./path";
@@ -15,14 +24,31 @@ const DocumentPreview = lazy(() =>
 const isMedia = (kind: PreviewKind) =>
 	["image", "video", "audio", "pdf"].includes(kind);
 
-export function FilePreview({ path }: { path: string }) {
+export function FilePreview({
+	path,
+	onBack,
+	renderMenu,
+}: {
+	path: string;
+	onBack: () => void;
+	renderMenu: (options: ReactNode) => ReactNode;
+}) {
 	const [content, setContent] = useState<string | null>(null);
 	const [kind, setKind] = useState(() => previewKind(path));
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [truncated, setTruncated] = useState(false);
 	const [source, setSource] = useState(false);
-	const [wrap, setWrap] = useState(false);
+	const [wrap, setWrap] = usePreference(
+		"webdrive.preview.wrap",
+		["on", "off"],
+		"off",
+	);
+	const [lineNumbers, setLineNumbers] = usePreference(
+		"webdrive.preview.lines",
+		["on", "off"],
+		"on",
+	);
 	const [copyStatus, setCopyStatus] = useState("Copy");
 	const [attempt, setAttempt] = useState(0);
 
@@ -86,11 +112,73 @@ export function FilePreview({ path }: { path: string }) {
 		setLoading(false);
 		setError("This media could not be loaded. Try again or download the file.");
 	};
+	const lineCount = useMemo(
+		() => (content === null ? 0 : content.split("\n").length),
+		[content],
+	);
+	const canNumber = content !== null && lineCount <= MAX_NUMBERED_LINES;
+	const options =
+		content !== null ? (
+			<>
+				<div className="popup-label">Text options</div>
+				<button
+					className="popup-item"
+					aria-pressed={lineNumbers === "on" && canNumber}
+					disabled={!canNumber}
+					title={
+						!canNumber
+							? "Line numbers are unavailable for files over 10,000 lines"
+							: undefined
+					}
+					onClick={() => setLineNumbers(lineNumbers === "on" ? "off" : "on")}
+				>
+					<span className="popup-check">
+						{lineNumbers === "on" && canNumber && (
+							<Icon icon="solar:check-circle-bold" width={14} />
+						)}
+					</span>
+					Show line numbers
+				</button>
+				<button
+					className="popup-item"
+					aria-pressed={wrap === "on"}
+					onClick={() => setWrap(wrap === "on" ? "off" : "on")}
+				>
+					<span className="popup-check">
+						{wrap === "on" && (
+							<Icon icon="solar:check-circle-bold" width={14} />
+						)}
+					</span>
+					Wrap lines
+				</button>
+				<button
+					className="popup-item"
+					onClick={async () => {
+						try {
+							await navigator.clipboard.writeText(content);
+							setCopyStatus("Copied");
+						} catch {
+							setCopyStatus("Copy unavailable");
+						}
+					}}
+				>
+					{copyStatus}
+				</button>
+			</>
+		) : null;
 	return (
 		<div className="file-preview">
-			{kind !== "binary" && (
-				<div className="preview-toolbar">
-					{richDocument && !truncated && (
+			<div className="file-list-header preview-toolbar">
+				<div className="toolbar-group">
+					<button
+						className="btn btn-ghost"
+						aria-label="Parent folder"
+						title="Back to folder"
+						onClick={onBack}
+					>
+						<Icon icon="solar:arrow-left-linear" width={17} />
+					</button>
+					{richDocument && !truncated ? (
 						<div className="preview-tabs" aria-label="Document view">
 							<button
 								className="btn btn-ghost"
@@ -107,48 +195,32 @@ export function FilePreview({ path }: { path: string }) {
 								Source
 							</button>
 						</div>
+					) : (
+						<span className="toolbar-caption">
+							{kind === "binary"
+								? "Download"
+								: kind === "text"
+									? "Source"
+									: "Preview"}
+						</span>
 					)}
-					{content !== null && showSource && (
-						<button
-							className="btn btn-ghost"
-							aria-pressed={wrap}
-							onClick={() => setWrap(!wrap)}
-						>
-							Wrap lines
-						</button>
-					)}
-					<div className="preview-toolbar-actions">
-						{content !== null && (
-							<button
-								className="btn btn-ghost"
-								onClick={async () => {
-									try {
-										await navigator.clipboard.writeText(content);
-										setCopyStatus("Copied");
-									} catch {
-										setCopyStatus("Copy unavailable");
-									}
-								}}
-							>
-								{copyStatus}
-							</button>
-						)}
-						<a className="btn btn-ghost" href={downloadUrl(path)}>
-							Download
-						</a>
-					</div>
 				</div>
-			)}
-			{truncated && (
-				<div className="preview-notice" role="status">
-					Showing the first 1 MB as text. Download the file to read it in full.
-				</div>
-			)}
-			{richDocument && !showSource && kind === "html" && (
-				<div className="preview-notice">
-					HTML preview · scripts are disabled
-				</div>
-			)}
+				<div className="preview-toolbar-actions">{renderMenu(options)}</div>
+			</div>
+			<div className="preview-status" role="status">
+				{truncated
+					? "Showing the first 1 MB as text. Download to read the full file."
+					: kind === "html"
+						? "HTML preview · scripts are disabled"
+						: content !== null
+							? `${lineCount.toLocaleString()} lines`
+							: kind === "binary"
+								? "Download to open on your device"
+								: loading
+									? "Loading preview…"
+									: baseName(path)}
+			</div>
+
 			{error ? (
 				<div className="datatable-state text-danger" role="alert">
 					{error}{" "}
@@ -171,7 +243,8 @@ export function FilePreview({ path }: { path: string }) {
 							<CodePreview
 								content={content}
 								filename={baseName(path)}
-								wrap={wrap}
+								wrap={wrap === "on"}
+								lineNumbers={lineNumbers === "on" && canNumber}
 							/>
 						) : (
 							<Suspense fallback={<LoadingState label="Rendering document…" />}>
