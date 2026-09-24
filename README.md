@@ -4,6 +4,17 @@ A single-binary file browser that serves any directory over HTTP with a clean we
 
 ## Install
 
+### Homebrew
+
+```bash
+brew install cross-entropy-ai/tap/webdrive
+```
+
+Upgrade with `brew update && brew upgrade webdrive`. Installs a precompiled
+binary for macOS or Linux on amd64 or arm64; Go and Bun are not required.
+
+### Install directly
+
 ```bash
 curl -sSL https://raw.githubusercontent.com/cross-entropy-ai/webdrive/main/install.sh | bash
 ```
@@ -38,12 +49,12 @@ Then open `http://localhost:9090` in your browser.
 
 ## Development
 
-Requires Go (see `go.mod`) and Bun.
+Requires Go (see `go.mod`), Bun, and Python 3 for release packaging tests.
 
 ```bash
 make deps       # Install dependencies
 make dev        # Start the Go backend and Bun frontend dev server
-make test       # Go regression tests, TypeScript checks, and Bun tests
+make test       # Go, TypeScript, Bun, and release packaging checks
 make build      # Build the frontend and embed it in ./webdrive
 ```
 
@@ -65,6 +76,9 @@ Air, use `go run ./cmd/webdrive` and `cd ui/ui && bun run dev` in separate termi
 Frontend tests live beside their modules. Backend API tests cover file lifecycle,
 batch operations, validation, and the SPA fallback. CI runs `make test` and the
 production build.
+
+Maintainers: see [Publishing a release](docs/releasing.md) for release packaging
+and automatic Homebrew tap updates.
 
 ## License
 

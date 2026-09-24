@@ -54,10 +54,11 @@ fmt: deps
 build: build-ui build-server
 	@$(call success, "Successfully built $(BIN)")
 
-## test: run Go tests, frontend type checking, and frontend tests
+## test: run Go, frontend, and release packaging checks
 test:
 	@go test ./...
 	@cd $(UI_DIR) && bun run typecheck && bun test
+	@python3 -m unittest discover -s scripts -p 'test_*.py'
 
 ## build-ui: build the React frontend into ui/ui/dist
 build-ui: deps

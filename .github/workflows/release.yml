@@ -2,65 +2,70 @@ name: Release
 
 on:
   push:
-    tags: ["v*"]
+    tags: ['v*']
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - goos: linux
-            goarch: amd64
-          - goos: linux
-            goarch: arm64
-          - goos: darwin
-            goarch: amd64
-          - goos: darwin
-            goarch: arm64
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          go-version: "1.26"
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Install dependencies
-        run: make deps
-
-      - name: Build UI
-        run: make build-ui
-
-      - name: Build binary
+          persist-credentials: false
+      - name: Validate release tag
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          TAG: ${{ github.ref_name }}
         run: |
-          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
-            go build -o webdrive-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd/webdrive
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+          test "$REF_TYPE" = tag
+          [[ "$TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
-          name: webdrive-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: webdrive-${{ matrix.goos }}-${{ matrix.goarch }}
-
-  publish:
-    needs: release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
+          go-version-file: go.mod
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
-          path: dist
-          merge-multiple: true
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          generate_release_notes: true
-          files: dist/*
+          bun-version: 1.3.13
+      - name: Install dependencies
+        run: |
+          go mod download
+          cd ui/ui && bun install --frozen-lockfile
+      - name: Check and test
+        run: |
+          test -z "$(gofmt -l cmd logger server ui/*.go)"
+          go vet ./...
+          (cd ui/ui && bunx --no-install biome format .)
+          make test
+      - name: Build frontend
+        run: cd ui/ui && bun run build
+      - name: Package all platforms
+        env:
+          TAG: ${{ github.ref_name }}
+        run: python3 scripts/release.py "$TAG"
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$TAG" --json isDraft > release.json; then
+            if [ "$(jq -r .isDraft release.json)" = false ]; then
+              # Never overwrite published assets; retries verify the manifest.
+              mkdir -p existing
+              gh release download "$TAG" --pattern checksums.txt --dir existing
+              cmp "dist/$TAG/checksums.txt" existing/checksums.txt
+              exit 0
+            fi
+          else
+            gh release create "$TAG" --verify-tag --draft --title "$TAG" --generate-notes
+          fi
+          gh release upload "$TAG" dist/"$TAG"/* --clobber
+          gh release edit "$TAG" --draft=false
