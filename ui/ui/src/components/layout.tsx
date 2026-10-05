@@ -1,3 +1,4 @@
+import { InstallApp } from "./install-app";
 import { Icon } from "./icon";
 import { useTheme } from "next-themes";
 import { useEffect, useState, type ReactNode } from "react";
@@ -57,6 +58,7 @@ export function Layout({ children }: { children: ReactNode }) {
 							{hostname || "Your workspace"}
 						</span>
 						<span className="chrome-divider" />
+						<InstallApp />
 						<ThemeToggle />
 					</div>
 				</header>

@@ -67,7 +67,7 @@ func (h *handler) search(c *gin.Context) {
 	defer cancel()
 	c.Header("Cache-Control", "no-store")
 	if c.Query("stream") != "1" {
-		c.JSON(http.StatusOK, searchTree(ctx, full, scope, query, searchLimit))
+		c.JSON(http.StatusOK, searchTreeProgress(ctx, full, scope, query, searchLimit, nil, c.Query("hide_hidden") == "1"))
 		return
 	}
 	// Flush an initial frame and progressive results so large trees do not hold
@@ -87,7 +87,7 @@ func (h *handler) search(c *gin.Context) {
 		c.Writer.Flush()
 	}
 	emit(searchResponse{Entries: []searchEntry{}}, false)
-	result := searchTreeProgress(ctx, full, scope, query, searchLimit, func(result searchResponse) { emit(result, false) })
+	result := searchTreeProgress(ctx, full, scope, query, searchLimit, func(result searchResponse) { emit(result, false) }, c.Query("hide_hidden") == "1")
 	if c.Request.Context().Err() == nil {
 		emit(result, true)
 	}
@@ -96,10 +96,10 @@ func (h *handler) search(c *gin.Context) {
 // Walk names only, without opening file contents or following symlinks. Keep
 // just the best results, but continue scanning so late matches can rank first.
 func searchTree(ctx context.Context, full, scope, query string, limit int) searchResponse {
-	return searchTreeProgress(ctx, full, scope, query, limit, nil)
+	return searchTreeProgress(ctx, full, scope, query, limit, nil, false)
 }
 
-func searchTreeProgress(ctx context.Context, full, scope, query string, limit int, progress func(searchResponse)) searchResponse {
+func searchTreeProgress(ctx context.Context, full, scope, query string, limit int, progress func(searchResponse), hideHidden bool) searchResponse {
 	result := searchResponse{Entries: []searchEntry{}}
 	var lastEmission time.Time
 	needle := []rune(strings.Map(func(r rune) rune {
@@ -120,6 +120,12 @@ func searchTreeProgress(ctx context.Context, full, scope, query string, limit in
 			return nil
 		}
 		if filename == full || entry.Type()&os.ModeSymlink != 0 {
+			return nil
+		}
+		if hideHidden && strings.HasPrefix(entry.Name(), ".") {
+			if entry.IsDir() {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 		rel, err := filepath.Rel(full, filename)

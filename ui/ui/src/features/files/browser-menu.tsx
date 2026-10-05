@@ -16,6 +16,8 @@ export type BrowserMenuProps = {
 	previewOptions?: ReactNode;
 	path: string;
 	isFile: boolean;
+	hideHidden: boolean;
+	setHideHidden: (hide: boolean) => void;
 	viewMode: ViewMode;
 	setViewMode: (mode: ViewMode) => void;
 	sortKey: SortKey;
@@ -31,6 +33,8 @@ export type BrowserMenuProps = {
 
 export function BrowserMenu({
 	previewOptions,
+	hideHidden,
+	setHideHidden,
 	path,
 	isFile,
 	viewMode,
@@ -143,6 +147,23 @@ export function BrowserMenu({
 						>
 							<Icon icon="solar:minimalistic-magnifer-linear" width={14} />
 							Find files <kbd style={{ marginLeft: "auto" }}>f</kbd>
+						</button>
+						<div className="popup-divider" />
+						<button
+							type="button"
+							className="popup-item"
+							aria-pressed={hideHidden}
+							onClick={() => {
+								setHideHidden(!hideHidden);
+								setMenuOpen(false);
+							}}
+						>
+							<span className="popup-check">
+								{hideHidden && (
+									<Icon icon="solar:check-circle-bold" width={14} />
+								)}
+							</span>
+							Hide hidden files
 						</button>
 						<div className="popup-divider" />
 						{previewOptions}
@@ -292,7 +313,9 @@ export function BrowserMenu({
 							</button>
 						)}
 					</div>,
-					document.body,
+					document.fullscreenElement ??
+						document.querySelector(".preview-expanded") ??
+						document.body,
 				)}
 		</div>
 	);

@@ -40,5 +40,19 @@ export function useBrowserPreferences() {
 		["asc", "desc"],
 		"asc",
 	);
-	return { viewMode, setViewMode, sortKey, setSortKey, sortDir, setSortDir };
+	const [hiddenFiles, setHiddenFiles] = usePreference(
+		"webdrive.hidden-files",
+		["show", "hide"] as const,
+		"show",
+	);
+	return {
+		viewMode,
+		setViewMode,
+		sortKey,
+		setSortKey,
+		sortDir,
+		setSortDir,
+		hideHidden: hiddenFiles === "hide",
+		setHideHidden: (hide: boolean) => setHiddenFiles(hide ? "hide" : "show"),
+	};
 }

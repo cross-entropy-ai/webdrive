@@ -1,4 +1,4 @@
-import { mkdir, rm } from "node:fs/promises";
+import { cp, mkdir, rm } from "node:fs/promises";
 
 await rm("dist", { recursive: true, force: true });
 await mkdir("dist", { recursive: true });
@@ -25,3 +25,6 @@ for (const output of result.outputs) {
 		);
 	}
 }
+
+// Stable public URLs keep the manifest and worker scoped to the proxy mount.
+await cp("public", "dist", { recursive: true });

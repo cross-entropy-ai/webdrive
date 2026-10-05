@@ -127,8 +127,46 @@ func TestRecursiveSearchStreamsBeforeCompletion(t *testing.T) {
 	writeFixture(t, root, "deep/你好2.txt", "")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	result := searchTreeProgress(ctx, root, "/", "你", searchLimit, func(result searchResponse) { cancel() })
+	result := searchTreeProgress(ctx, root, "/", "你", searchLimit, func(result searchResponse) { cancel() }, false)
 	if !result.Partial || len(result.Entries) != 1 {
 		t.Fatalf("scan ignored streaming cancellation: %+v", result)
+	}
+}
+
+func TestSearchHideHiddenBeforeRanking(t *testing.T) {
+	root, h := testServer(t)
+	// Hidden matches must not consume the result limit or mark visible results
+	// as truncated, including files nested inside a hidden directory.
+	for i := range 110 {
+		writeFixture(t, root, fmt.Sprintf(".hidden/match-%03d.txt", i), "")
+	}
+	writeFixture(t, root, ".match", "")
+	writeFixture(t, root, "visible/.match", "")
+	writeFixture(t, root, "visible/match.txt", "")
+	writeFixture(t, root, "visible/match.v2.txt", "")
+	for _, stream := range []string{"0", "1"} {
+		w := requestJSON(t, h, "GET", "/api/fs/search?q=match&hide_hidden=1&stream="+stream, nil, 200)
+		decoder := json.NewDecoder(w.Body)
+		var result searchResponse
+		for {
+			var frame searchResponse
+			if err := decoder.Decode(&frame); err == io.EOF {
+				break
+			} else if err != nil {
+				t.Fatal(err)
+			}
+			for _, entry := range frame.Entries {
+				if strings.HasPrefix(entry.Name, ".") || strings.Contains(entry.Path, "/.") {
+					t.Fatalf("hidden result leaked in stream %s: %+v", stream, entry)
+				}
+			}
+			result = frame
+		}
+		if len(result.Entries) != 2 || result.HasMore || result.Partial {
+			t.Fatalf("hidden results affected visible ranking: %+v", result)
+		}
+	}
+	if result := searchRequest(t, h, "/", "match"); len(result.Entries) != searchLimit || !result.HasMore {
+		t.Fatalf("default must still include hidden entries: %+v", result)
 	}
 }

@@ -10,9 +10,11 @@ import "./file-finder.css";
 
 // Mounted only while open, so closing also cancels pending work and clears the query.
 export function FileFinder({
+	hideHidden,
 	onClose,
 	onOpen,
 }: {
+	hideHidden: boolean;
 	onClose: () => void;
 	onOpen: (entry: SearchEntry) => void;
 }) {
@@ -43,6 +45,7 @@ export function FileFinder({
 					(result) => {
 						if (!controller.signal.aborted) setResponse(result);
 					},
+					hideHidden,
 				);
 			} catch (error) {
 				if (!controller.signal.aborted) setError(errorMessage(error));
@@ -52,7 +55,7 @@ export function FileFinder({
 			window.clearTimeout(timer);
 			controller.abort();
 		};
-	}, [query, attempt]);
+	}, [query, attempt, hideHidden]);
 
 	useEffect(() => {
 		listRef.current
@@ -63,7 +66,9 @@ export function FileFinder({
 	return (
 		<Modal open onClose={onClose} className="finder-modal">
 			<Modal.Header>Find files</Modal.Header>
-			<div className="finder-scope">All files · from root</div>
+			<div className="finder-scope">
+				{hideHidden ? "Visible files · from root" : "All files · from root"}
+			</div>
 			<div className="finder-input-row">
 				<Icon icon="solar:minimalistic-magnifer-linear" width={20} />
 				<input

@@ -83,8 +83,16 @@ export function FileBrowser() {
 				: undefined,
 	);
 
-	const { viewMode, setViewMode, sortKey, setSortKey, sortDir, setSortDir } =
-		useBrowserPreferences();
+	const {
+		viewMode,
+		setViewMode,
+		sortKey,
+		setSortKey,
+		sortDir,
+		setSortDir,
+		hideHidden,
+		setHideHidden,
+	} = useBrowserPreferences();
 	const [query, setQuery] = useState("");
 	const [finderPath, setFinderPath] = useState<string | null>(null);
 	const searchRef = useRef<HTMLInputElement>(null);
@@ -164,7 +172,7 @@ export function FileBrowser() {
 
 	useEffect(() => {
 		setSelected(new Set());
-	}, [query]);
+	}, [query, hideHidden]);
 	useEffect(() => {
 		const onKey = (event: KeyboardEvent) => {
 			const target = event.target as HTMLElement;
@@ -278,15 +286,24 @@ export function FileBrowser() {
 		if (e.dataTransfer) handleDropUpload(e.dataTransfer);
 	};
 
+	const visibleEntries = useMemo(
+		() =>
+			(data?.entries ?? []).filter(
+				(entry) => !hideHidden || !entry.name.startsWith("."),
+			),
+		[data, hideHidden],
+	);
 	const sortedEntries = useMemo(
 		() =>
 			!isFile && data
-				? fuzzyEntries(sortEntries(data.entries, sortKey, sortDir), query)
+				? fuzzyEntries(sortEntries(visibleEntries, sortKey, sortDir), query)
 				: [],
-		[data, isFile, sortKey, sortDir, query],
+		[data, visibleEntries, isFile, sortKey, sortDir, query],
 	);
 	const fileMenu = (previewOptions?: React.ReactNode) => (
 		<BrowserMenu
+			hideHidden={hideHidden}
+			setHideHidden={setHideHidden}
 			path={path}
 			isFile={true}
 			viewMode={viewMode}
@@ -305,40 +322,20 @@ export function FileBrowser() {
 	);
 
 	return (
-		<div className="page-shell animate-fadeUp">
+		<div className={`page-shell${isFile ? " preview-page" : ""}`}>
 			<Breadcrumb path={path} onNavigate={navigate} />
-			<section className="browser-heading">
-				<div className="browser-heading-copy">
-					<div className="eyebrow">
-						{isFile ? "FILE PREVIEW" : "YOUR WORKSPACE"}
-					</div>
-					<h1 title={path === "/" ? "All files" : baseName(path)}>
-						{path === "/" ? "All files" : baseName(path)}
-					</h1>
-					<p>
-						{isFile
-							? "A closer look, without leaving your workspace."
-							: loading && !data
+			{!isFile && (
+				<section className="browser-heading">
+					<div className="browser-heading-copy">
+						<h1 title={path === "/" ? "All files" : baseName(path)}>
+							{path === "/" ? "All files" : baseName(path)}
+						</h1>
+						<p>
+							{loading && !data
 								? "Getting your files ready…"
-								: `${data?.entries.filter((entry) => entry.is_dir).length ?? 0} folders · ${data?.entries.filter((entry) => !entry.is_dir).length ?? 0} files`}
-					</p>
-				</div>
-				{isFile ? (
-					<div className="heading-actions">
-						<Button onClick={() => navigate(parentOf(path))}>
-							<Icon icon="solar:arrow-left-linear" width={18} />
-							Back to folder
-						</Button>
-						<a
-							className="btn btn-primary"
-							aria-label="Download current file"
-							href={downloadUrl(path)}
-						>
-							<Icon icon="solar:download-square-linear" width={18} />
-							Download file
-						</a>
+								: `${visibleEntries.filter((entry) => entry.is_dir).length} folders · ${visibleEntries.filter((entry) => !entry.is_dir).length} files`}
+						</p>
 					</div>
-				) : (
 					<div className="heading-actions">
 						<Button
 							onClick={() => setNewFolderOpen(true)}
@@ -356,8 +353,8 @@ export function FileBrowser() {
 							<span>Upload files</span>
 						</Button>
 					</div>
-				)}
-			</section>
+				</section>
+			)}
 
 			{error && (
 				<div className="error-box" role="alert">
@@ -561,6 +558,8 @@ export function FileBrowser() {
 									</Button>
 								) : (
 									<BrowserMenu
+										hideHidden={hideHidden}
+										setHideHidden={setHideHidden}
 										path={path}
 										isFile={isFile}
 										viewMode={viewMode}
@@ -616,7 +615,10 @@ export function FileBrowser() {
 							onSort={toggleSort}
 						/>
 					)}
-					<div className="datatable-scroll" key={path}>
+					<div
+						className={`datatable-scroll${isFile ? " preview-scroll" : ""}`}
+						key={path}
+					>
 						{isFile ? (
 							<PreviewBoundary key={path} path={path}>
 								<Suspense
@@ -646,6 +648,10 @@ export function FileBrowser() {
 						) : sortedEntries.length === 0 ? (
 							<EmptyFolder
 								filtered={!!query.trim()}
+								hiddenOnly={
+									hideHidden && !query.trim() && !!data?.entries.length
+								}
+								onShowHidden={() => setHideHidden(false)}
 								onClear={() => setQuery("")}
 								onUpload={() => fileInputRef.current?.click()}
 							/>
@@ -675,31 +681,25 @@ export function FileBrowser() {
 							/>
 						)}
 					</div>
-					<footer className="browser-status">
-						<span aria-live="polite">
-							{isFile
-								? "File preview"
-								: loading && !data
+					{!isFile && (
+						<footer className="browser-status">
+							<span aria-live="polite">
+								{loading && !data
 									? "Loading…"
 									: selected.size
 										? `${selected.size} selected`
-										: `${sortedEntries.length}${query ? ` of ${data?.entries.length ?? 0}` : ""} items`}
-						</span>
-						<span className="status-hint">
-							{isFile
-								? "Text options in ···"
-								: query.trim()
+										: `${sortedEntries.length}${query ? ` of ${visibleEntries.length}` : ""} items`}
+							</span>
+							<span className="status-hint">
+								{query.trim()
 									? "Best matches first · Enter to open"
 									: "/ filter folder · f find all files"}
-						</span>
-						<span className="status-mobile">
-							{isFile
-								? "Preview"
-								: viewMode === "list"
-									? "List view"
-									: "Gallery view"}
-						</span>
-					</footer>
+							</span>
+							<span className="status-mobile">
+								{viewMode === "list" ? "List view" : "Gallery view"}
+							</span>
+						</footer>
+					)}
 				</div>
 			</div>
 
@@ -718,6 +718,7 @@ export function FileBrowser() {
 
 			{finderPath === path && (
 				<FileFinder
+					hideHidden={hideHidden}
 					onClose={() => setFinderPath(null)}
 					onOpen={(entry) => {
 						setFinderPath(null);

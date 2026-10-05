@@ -14,6 +14,7 @@ import folderPathConnectLinear from "@iconify-icons/solar/folder-path-connect-li
 import galleryLinear from "@iconify-icons/solar/gallery-linear";
 import homeLinear from "@iconify-icons/solar/home-linear";
 import listLinear from "@iconify-icons/solar/list-linear";
+import minimizeLinear from "@iconify-icons/solar/minimize-linear";
 import maximizeLinear from "@iconify-icons/solar/maximize-linear";
 import menuDotsBold from "@iconify-icons/solar/menu-dots-bold";
 import moonLinear from "@iconify-icons/solar/moon-linear";
@@ -51,6 +52,7 @@ const icons: Record<string, IconProps["icon"]> = {
 	"solar:home-linear": homeLinear,
 	"solar:list-linear": listLinear,
 	"solar:maximize-linear": maximizeLinear,
+	"solar:minimize-linear": minimizeLinear,
 	"solar:menu-dots-bold": menuDotsBold,
 	"solar:moon-linear": moonLinear,
 	"solar:music-note-linear": musicNoteLinear,

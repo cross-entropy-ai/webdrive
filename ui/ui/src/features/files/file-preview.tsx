@@ -13,6 +13,7 @@ import { usePreference } from "./use-browser-preferences";
 import { MAX_NUMBERED_LINES } from "./highlight-lines";
 import { CodePreview } from "./code-preview";
 import { previewKind, isTextFilename, type PreviewKind } from "./file-types";
+import { usePreviewFullscreen } from "./use-preview-fullscreen";
 import { baseName } from "./path";
 import { readPreviewText } from "./preview-text";
 
@@ -33,6 +34,7 @@ export function FilePreview({
 	onBack: () => void;
 	renderMenu: (options: ReactNode) => ReactNode;
 }) {
+	const fullscreen = usePreviewFullscreen();
 	const [content, setContent] = useState<string | null>(null);
 	const [kind, setKind] = useState(() => previewKind(path));
 	const [error, setError] = useState<string | null>(null);
@@ -167,7 +169,10 @@ export function FilePreview({
 			</>
 		) : null;
 	return (
-		<div className="file-preview">
+		<div
+			ref={fullscreen.ref}
+			className={`file-preview${fullscreen.expanded ? " preview-expanded" : ""}`}
+		>
 			<div className="file-list-header preview-toolbar">
 				<div className="toolbar-group">
 					<button
@@ -178,6 +183,9 @@ export function FilePreview({
 					>
 						<Icon icon="solar:arrow-left-linear" width={17} />
 					</button>
+					<h1 className="preview-filename" title={baseName(path)}>
+						{baseName(path)}
+					</h1>
 					{richDocument && !truncated ? (
 						<div className="preview-tabs" aria-label="Document view">
 							<button
@@ -205,7 +213,42 @@ export function FilePreview({
 						</span>
 					)}
 				</div>
-				<div className="preview-toolbar-actions">{renderMenu(options)}</div>
+				<div className="preview-toolbar-actions">
+					<a
+						className="btn btn-ghost"
+						href={downloadUrl(path)}
+						aria-label="Download current file"
+						title="Download file"
+					>
+						<Icon icon="solar:download-square-linear" width={17} />
+					</a>
+					<button
+						ref={fullscreen.buttonRef}
+						type="button"
+						className="btn btn-ghost"
+						aria-label={
+							fullscreen.expanded ? "Exit full screen" : "Full screen"
+						}
+						title={
+							fullscreen.expanded ? "Exit full screen (Esc)" : "Full screen"
+						}
+						aria-pressed={fullscreen.expanded}
+						onClick={() => void fullscreen.toggle()}
+					>
+						<Icon
+							icon={
+								fullscreen.expanded
+									? "solar:minimize-linear"
+									: "solar:maximize-linear"
+							}
+							width={17}
+						/>
+						<span className="fullscreen-label">
+							{fullscreen.expanded ? "Exit full screen" : "Full screen"}
+						</span>
+					</button>
+					{renderMenu(options)}
+				</div>
 			</div>
 			<div className="preview-status" role="status">
 				{truncated

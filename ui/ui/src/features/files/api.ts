@@ -14,10 +14,11 @@ export const filesApi = {
 		query: string,
 		signal: AbortSignal,
 		onProgress: (result: SearchProgress) => void,
+		hideHidden = false,
 	): Promise<void> {
 		const response = await request(
 			appUrl(
-				`/api/fs/search?path=${encodeURIComponent(path)}&q=${encodeURIComponent(query)}&stream=1`,
+				`/api/fs/search?path=${encodeURIComponent(path)}&q=${encodeURIComponent(query)}&stream=1${hideHidden ? "&hide_hidden=1" : ""}`,
 			),
 			{ signal },
 		);

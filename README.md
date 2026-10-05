@@ -46,7 +46,10 @@ a nested directory. Reverse proxies that strip a path prefix are also supported.
 - Modern light/dark interface with comfortable spacing and responsive list/gallery views
 - `/` filters filenames in the current folder (`Enter` opens the best match, `Esc` clears)
 - `f` opens a compact fuzzy finder across the Webdrive root and all subfolders, regardless of the current folder or file preview; match filenames or relative paths, use ↑/↓ to select, `Enter` to open, and `Esc` to close. Also available under `…` → Find files. Results show paths and highlighted matches.
-- Stable header heights across navigation and view changes, sortable columns, and saved browsing preferences
+- `…` → Hide hidden files toggles dotfiles and dotfolders in list/gallery views and the global finder; your choice is saved in this browser (shown by default)
+- Installable PWA with app icons, a standalone window, and an offline connection reminder
+- Compact workspace layout that gives laptop screens more room for files, with sortable columns and saved browsing preferences
+- Full-screen file previews with an exit button and Escape support; viewport-sized fallback where native fullscreen is unavailable
 - Visible upload/new-folder actions and keyboard-friendly dialogs
 - Rendered HTML and Markdown previews, with a source view, copy, and line wrapping
 - Text/code previews with on-demand syntax highlighting, optional line numbers, and wrapping; text options live in the `…` menu and are remembered
@@ -68,10 +71,23 @@ download prompt without fetching file contents. Unknown formats are checked with
 a HEAD request before loading any preview content.
 
 Recursive search streams matches asynchronously as it scans, cancels outdated
-queries, reads filenames only, includes hidden folders, and does not follow
+queries, reads filenames only, respects the hidden-file preference, and does not follow
 symlinks. It returns the best 100 matches; if a scan times out or cannot read some
 folders, the finder marks results as partial. Use a more specific filename or
 relative path to narrow the matches.
+
+## Install as an app
+
+Use the **Install Webdrive** button in the top bar or your browser's install
+option. On iPhone/iPad, open Webdrive in Safari and choose **Share → Add to Home
+Screen**. On Mac Safari, use **File → Add to Dock**.
+
+PWA installation requires HTTPS, except on `localhost` or `127.0.0.1`. For access
+from another device, serve Webdrive through an HTTPS reverse proxy. Proxy mounts
+such as `/proxy/9090/` are supported; the installed app opens that mount's root.
+File browsing and operations still require the server to be reachable. When an
+installed app is opened offline, it shows a retry page; the service worker does
+not cache your files or API responses.
 
 ## Development
 

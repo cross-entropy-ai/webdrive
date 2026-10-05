@@ -44,6 +44,12 @@ func acceptsGzip(header string) bool {
 
 func serveAsset(c *gin.Context, root fs.FS, fileServer http.Handler) {
 	p := c.Request.URL.Path
+	if p == "/sw.js" || p == "/manifest.webmanifest" {
+		c.Header("Cache-Control", "no-cache")
+	}
+	if p == "/manifest.webmanifest" {
+		c.Header("Content-Type", "application/manifest+json")
+	}
 	if hashedAsset.MatchString(p) {
 		c.Header("Cache-Control", "public, max-age=31536000, immutable")
 	}

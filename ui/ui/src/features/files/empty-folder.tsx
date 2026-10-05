@@ -3,10 +3,14 @@ import { Icon } from "../../components/icon";
 
 export function EmptyFolder({
 	filtered,
+	hiddenOnly,
+	onShowHidden,
 	onClear,
 	onUpload,
 }: {
 	filtered: boolean;
+	hiddenOnly: boolean;
+	onShowHidden: () => void;
 	onClear: () => void;
 	onUpload: () => void;
 }) {
@@ -22,14 +26,29 @@ export function EmptyFolder({
 					width={36}
 				/>
 			</div>
-			<h2>{filtered ? "No matching files" : "Room for something new"}</h2>
+			<h2>
+				{filtered
+					? "No matching files"
+					: hiddenOnly
+						? "No visible files"
+						: "Room for something new"}
+			</h2>
 			<p>
 				{filtered
 					? "Try another name or clear your search."
-					: "Drop files here, or upload something to get started."}
+					: hiddenOnly
+						? "This folder only contains hidden files or folders."
+						: "Drop files here, or upload something to get started."}
 			</p>
-			<Button variant="primary" onClick={filtered ? onClear : onUpload}>
-				{filtered ? "Clear search" : "Upload files"}
+			<Button
+				variant="primary"
+				onClick={filtered ? onClear : hiddenOnly ? onShowHidden : onUpload}
+			>
+				{filtered
+					? "Clear search"
+					: hiddenOnly
+						? "Show hidden files"
+						: "Upload files"}
 			</Button>
 		</div>
 	);

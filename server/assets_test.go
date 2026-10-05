@@ -75,3 +75,33 @@ func TestCompressedAssets(t *testing.T) {
 		t.Fatal("index must revalidate and preserve relative base")
 	}
 }
+
+func TestPWAAssets(t *testing.T) {
+	root := fstest.MapFS{
+		"index.html":           {Data: []byte(`<base href="/"><div id="root"></div>`)},
+		"sw.js":                {Data: []byte(`self.addEventListener("fetch", () => {});`)},
+		"manifest.webmanifest": {Data: []byte(`{"start_url":"./","scope":"./"}`)},
+		"icons/icon-192.png":   {Data: []byte("icon")},
+	}
+	gin.SetMode(gin.TestMode)
+	handler := gin.New()
+	handler.NoRoute(spaHandler(root))
+	for _, asset := range []struct{ path, contentType string }{
+		{"/sw.js", "javascript"},
+		{"/manifest.webmanifest", "application/manifest+json"},
+	} {
+		for _, method := range []string{"GET", "HEAD"} {
+			w := requestJSON(t, handler, method, asset.path, nil, 200)
+			if !strings.Contains(w.Header().Get("Content-Type"), asset.contentType) || w.Header().Get("Cache-Control") != "no-cache" {
+				t.Fatalf("PWA asset must revalidate with correct MIME: %v", w.Header())
+			}
+			if method == "HEAD" && w.Body.Len() != 0 {
+				t.Fatal("HEAD must not return an asset body")
+			}
+		}
+	}
+	w := requestJSON(t, handler, "GET", "/icons/icon-192.png", nil, 200)
+	if w.Header().Get("Content-Type") != "image/png" || w.Body.String() != "icon" {
+		t.Fatal("icon must be served as an asset, not the SPA fallback")
+	}
+}

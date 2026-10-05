@@ -277,10 +277,10 @@ body {
 	overflow: hidden;
 }
 .chrome-bar {
-	height: 72px;
+	height: 52px;
 	border-bottom: 1px solid var(--border);
 	background: var(--panel);
-	padding: 0 clamp(20px, 4vw, 64px);
+	padding: 0 20px;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -317,14 +317,14 @@ body {
 /* ── Page Shell ─────────────────────────────────────────────── */
 
 .page-shell {
-	padding: 24px clamp(20px, 4vw, 64px);
-	padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+	padding: 12px 20px;
+	padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
 	height: 100%;
-	max-width: 1560px;
+	max-width: none;
 	margin: 0 auto;
 	display: flex;
 	flex-direction: column;
-	gap: 18px;
+	gap: 10px;
 }
 /* ── Toolbar (shared between file & directory views) ────────── */
 
@@ -427,6 +427,7 @@ body {
 }
 .datatable-scroll {
 	flex: 1;
+	min-height: 0;
 	overflow: auto;
 }
 .datatable-state {
@@ -695,7 +696,7 @@ body {
 .chrome-actions {
 	display: flex;
 	align-items: center;
-	gap: 18px;
+	gap: 10px;
 	min-width: 0;
 }
 .host-badge {
@@ -723,7 +724,7 @@ body {
 }
 @media (max-width: 600px) {
 	.chrome-bar {
-		height: 60px;
+		height: 52px;
 		padding: 0 16px;
 	}
 	.brand {
@@ -748,7 +749,7 @@ body {
 	.page-shell {
 		padding: 14px 12px;
 		padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-		gap: 12px;
+		gap: 8px;
 	}
 	.btn,
 	.icon-btn {

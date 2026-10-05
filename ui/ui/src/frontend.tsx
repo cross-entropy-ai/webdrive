@@ -8,11 +8,13 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./app";
+import { configurePwa, registerServiceWorker } from "./lib/pwa";
 
 // Freeze the resolved mount point before client-side navigation changes the
 // document URL; otherwise a relative <base> would move with each directory.
 const base = document.querySelector("base");
 if (base) base.href = base.href;
+configurePwa();
 
 const elem = document.getElementById("root")!;
 const app = (
@@ -29,3 +31,5 @@ if (import.meta.hot) {
 	// The hot module reloading API is not available in production.
 	createRoot(elem).render(app);
 }
+
+if (process.env.NODE_ENV === "production") registerServiceWorker();
